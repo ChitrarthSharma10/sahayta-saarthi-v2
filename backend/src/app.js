@@ -17,6 +17,9 @@ const assessmentsRouter   = require('./routes/assessments');
 const libraryRouter       = require('./routes/library');
 const competencyRouter    = require('./routes/competency');
 const announcementsRouter = require('./routes/announcements');
+const analyticsRouter     = require('./routes/analytics');
+const feedbackRouter      = require('./routes/feedback');
+const enrollmentsRouter   = require('./routes/enrollments');
 
 const app = express();
 
@@ -54,6 +57,9 @@ app.use('/api/assessments',   assessmentsRouter);
 app.use('/api/library',       libraryRouter);
 app.use('/api/competency',    competencyRouter);
 app.use('/api/announcements', announcementsRouter);
+app.use('/api/analytics',     analyticsRouter);
+app.use('/api/feedback',      feedbackRouter);
+app.use('/api/enrollments',   enrollmentsRouter);
 
 /* ─────────────────────────────────────────────
    404 CATCH-ALL

@@ -54,6 +54,9 @@ export const AssessmentModal = ({ assessment, onClose, onCompleted }) => {
 
       if (res.success && res.result) {
         setResult(res.result);
+        window.dispatchEvent(new CustomEvent('capacity-connect-assessment-submitted', {
+          detail: res.result,
+        }));
         addToast(
           res.result.passed
             ? `🎉 Assessment passed! Score: ${res.result.score}%`

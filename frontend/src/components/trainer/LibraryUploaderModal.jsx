@@ -14,7 +14,7 @@ import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../common/Toast';
 
-export const LibraryUploaderModal = ({ courses, onClose, onUploaded }) => {
+export const LibraryUploaderModal = ({ courses, initialCourseId, onClose, onUploaded }) => {
   const { user } = useAuth();
   const { addToast } = useToast();
 
@@ -22,7 +22,7 @@ export const LibraryUploaderModal = ({ courses, onClose, onUploaded }) => {
   const [description, setDescription] = useState('');
   const [type, setType] = useState('slides');
   const [url, setUrl] = useState('');
-  const [courseId, setCourseId] = useState(courses[0]?._id || '');
+  const [courseId, setCourseId] = useState(initialCourseId || courses[0]?._id || '');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState(['curriculum', 'reference']);
   const [fileSize, setFileSize] = useState('3.5 MB');

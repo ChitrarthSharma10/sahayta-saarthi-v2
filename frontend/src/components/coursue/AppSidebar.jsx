@@ -6,6 +6,7 @@ import {
   FolderArchive,
   Settings,
   LogOut,
+  MessageSquare,
 } from 'lucide-react';
 import { COURSUE_FRIENDS } from '../../data/coursueData';
 import { useAuth } from '../../context/AuthContext';
@@ -14,8 +15,10 @@ import { useAuth } from '../../context/AuthContext';
 const NAV_ITEMS = [
   { id: 'Dashboard', label: 'Dashboard',       icon: LayoutDashboard },
   { id: 'Courses',   label: 'My Courses',       icon: BookOpen        },
+  { id: 'All Courses', label: 'All Courses',    icon: BookOpen        },
   { id: 'Quizzes',   label: 'Quizzes & Tests',  icon: CheckSquare     },
   { id: 'Library',   label: 'Resource Library', icon: FolderArchive   },
+  { id: 'Feedback',  label: 'Feedback',         icon: MessageSquare   },
 ];
 
 export const AppSidebar = ({ activeNav = 'Dashboard', onNavSelect }) => {
@@ -32,7 +35,7 @@ export const AppSidebar = ({ activeNav = 'Dashboard', onNavSelect }) => {
               <path d="M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z" />
             </svg>
           </div>
-          <span className="text-base font-bold tracking-tight text-[#19191F]">Coursue</span>
+          <span className="text-base font-bold tracking-tight text-[#19191F]">Capacity Connect</span>
         </div>
 
         {/* Overview Navigation */}

@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   GraduationCap,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -26,12 +27,15 @@ const NAV_CONFIG = {
     { id: 'courses-overview',    label: 'Course Management',       icon: BookOpen        },
     { id: 'assessments-builder', label: 'Questionnaire Builder',   icon: CheckSquare     },
     { id: 'library-uploader',    label: 'Content Library',         icon: FolderArchive   },
+    { id: 'feedback',            label: 'Feedback',                 icon: MessageSquare   },
+    { id: 'profile-management',  label: 'Profile Management',       icon: Users           },
   ],
   Admin: [
     { id: 'dashboard',   label: 'Dashboard',              icon: LayoutDashboard },
     { id: 'approvals',   label: 'User Approvals',          icon: Users           },
     { id: 'competency',  label: 'Competency Mapping',      icon: GitMerge        },
     { id: 'announcements', label: 'Announcements',         icon: Megaphone       },
+    { id: 'feedback',      label: 'Feedback Inbox',         icon: MessageSquare   },
   ],
 };
 

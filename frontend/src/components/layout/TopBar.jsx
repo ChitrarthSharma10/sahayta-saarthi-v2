@@ -38,12 +38,19 @@ export const TopBar = ({ searchQuery, setSearchQuery }) => {
 
   /* ── Fetch announcements ────────────────────────────────────── */
   useEffect(() => {
-    api
+    const fetchAnnouncements = () => api
       .getAnnouncements()
       .then((res) => {
         if (res?.announcements) setAnnouncements(res.announcements);
       })
       .catch((e) => console.warn('Could not load announcements', e));
+    fetchAnnouncements();
+    const refreshInterval = window.setInterval(fetchAnnouncements, 5000);
+    window.addEventListener('capacity-connect-announcements-updated', fetchAnnouncements);
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('capacity-connect-announcements-updated', fetchAnnouncements);
+    };
   }, []);
 
   const handleRoleSelect = async (targetRole) => {

@@ -17,9 +17,12 @@ import {
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AssessmentModal } from '../components/trainee/AssessmentModal';
+import { StatisticsPanel } from '../components/coursue/StatisticsPanel';
+import { useToast } from '../components/common/Toast';
 
 export const TraineeDashboard = ({ searchQuery }) => {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [courses, setCourses] = useState([]);
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -306,6 +309,11 @@ export const TraineeDashboard = ({ searchQuery }) => {
 
         {/* Right Column (7 Cols on large screen): Course Cards Grid */}
         <div className="lg:col-span-7 space-y-5">
+          <StatisticsPanel
+            variant="trainee"
+            onAddMentor={() => addToast('Browse the mentor directory to discover accredited mentors', 'info')}
+            onSeeAllMentors={() => addToast('Loading full mentor catalog...', 'info')}
+          />
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">

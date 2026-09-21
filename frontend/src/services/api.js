@@ -64,6 +64,12 @@ export const api = {
       body: JSON.stringify({ status }),
     }),
 
+  updateTrainerProfile: (userId, profile) =>
+    request(`/users/${userId}/profile`, {
+      method: 'PATCH',
+      body: JSON.stringify(profile),
+    }),
+
   // Courses
   getCourses: (params = {}) => {
     const query = new URLSearchParams(params).toString();
@@ -112,4 +118,34 @@ export const api = {
     const query = type ? `?type=${type}` : '';
     return request(`/announcements${query}`);
   },
+
+  createAnnouncement: (announcement) =>
+    request('/announcements', {
+      method: 'POST',
+      body: JSON.stringify(announcement),
+    }),
+
+  deleteAnnouncement: (announcementId) =>
+    request(`/announcements/${announcementId}`, { method: 'DELETE' }),
+
+  // Statistics
+  getTraineeAnalytics: (userId) => request(`/analytics/trainee/${userId}`),
+  getTrainerAnalytics: (trainerId) => request(`/analytics/trainer/${trainerId}`),
+
+  // Feedback
+  getFeedback: () => request('/feedback'),
+  submitFeedback: (feedback) => request('/feedback', {
+    method: 'POST',
+    body: JSON.stringify(feedback),
+  }),
+
+  // Course enrollment
+  getEnrollments: (userId) => request(`/enrollments/${userId}`),
+  enrollInCourse: (userId, courseId) => request('/enrollments', {
+    method: 'POST',
+    body: JSON.stringify({ userId, courseId }),
+  }),
+  optOutOfCourse: (userId, courseId) => request(`/enrollments/${userId}/${courseId}`, {
+    method: 'DELETE',
+  }),
 };

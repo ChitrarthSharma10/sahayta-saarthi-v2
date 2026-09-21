@@ -1,11 +1,73 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MoreHorizontal, Plus, UserPlus, Check } from 'lucide-react';
 import { MENTORS_LIST } from '../../data/coursueData';
 import { useToast } from '../common/Toast';
+import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
 
-export const StatisticsPanel = ({ onAddMentor, onSeeAllMentors }) => {
+const EMPTY_CHARTS = {
+  trainee: {
+    title: 'Performance analytics',
+    summary: 'Scores and learning hours',
+    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+    series: [
+      { label: 'Assessment score', color: '#755BE8', values: [0, 0, 0, 0] },
+      { label: 'Learning hours', color: '#C7BDF2', values: [0, 0, 0, 0] },
+    ],
+    max: 100,
+  },
+  trainer: {
+    title: 'Class performance',
+    summary: 'Completion, scores, engagement',
+    labels: ['Current'],
+    series: [
+      { label: 'Completion', color: '#755BE8', values: [0] },
+      { label: 'Test score', color: '#A997EE', values: [0] },
+      { label: 'Engagement', color: '#D8D0F7', values: [0] },
+    ],
+    max: 100,
+  },
+};
+
+export const StatisticsPanel = ({
+  onAddMentor,
+  onSeeAllMentors,
+  variant = 'trainee',
+  chartData,
+}) => {
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [mentors, setMentors] = useState(MENTORS_LIST);
+  const [remoteChart, setRemoteChart] = useState(null);
+  const chart = chartData || remoteChart || EMPTY_CHARTS[variant] || EMPTY_CHARTS.trainee;
+
+  useEffect(() => {
+    if (chartData) return undefined;
+
+    const userId = user?._id || (variant === 'trainer' ? null : 'demo-trainee');
+    if (!userId) return undefined;
+
+    const refreshAnalytics = () => {
+      const loadAnalytics = variant === 'trainer'
+        ? api.getTrainerAnalytics(userId)
+        : api.getTraineeAnalytics(userId);
+
+      loadAnalytics
+        .then((response) => {
+          if (response?.chart) setRemoteChart(response.chart);
+        })
+        .catch((error) => console.warn('Could not load statistics analytics:', error));
+    };
+
+    refreshAnalytics();
+    const refreshInterval = window.setInterval(refreshAnalytics, 5000);
+    window.addEventListener('capacity-connect-assessment-submitted', refreshAnalytics);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('capacity-connect-assessment-submitted', refreshAnalytics);
+    };
+  }, [chartData, user?._id, variant]);
 
   const toggleFollow = (mentorId) => {
     setMentors((prev) =>
@@ -24,11 +86,13 @@ export const StatisticsPanel = ({ onAddMentor, onSeeAllMentors }) => {
   };
 
   return (
-    <div className="w-full lg:w-[270px] xl:w-[285px] shrink-0 space-y-6">
-      <div className="bg-white rounded-[24px] p-5 border border-[#EEEEF4] shadow-card space-y-6">
-        {/* Header: "Statistic" & overflow button */}
+    <div className={`w-full ${variant === 'trainer' ? 'xl:flex-1 xl:min-w-[360px]' : 'lg:w-[270px] xl:w-[285px] shrink-0'} space-y-6`}>
+      <div className="bg-white rounded-3xl p-5 border border-[#EEEEF4] shadow-card space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-[#19191F]">Statistic</h2>
+          <div>
+            <h2 className="text-sm font-bold text-[#19191F]">{chart.title}</h2>
+            <p className="text-[10px] text-[#92929E] mt-0.5">{chart.summary}</p>
+          </div>
           <button
             type="button"
             className="p-1 text-[#92929E] hover:text-[#19191F] rounded-lg transition-colors"
@@ -38,108 +102,49 @@ export const StatisticsPanel = ({ onAddMentor, onSeeAllMentors }) => {
           </button>
         </div>
 
-        {/* Circular Progress Ring & Avatar */}
-        <div className="flex flex-col items-center text-center">
-          <div className="relative w-28 h-28 flex items-center justify-center">
-            {/* SVG Progress Ring */}
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              {/* Background Track */}
-              <circle
-                cx="50"
-                cy="50"
-                r="42"
-                stroke="#F0EEF8"
-                strokeWidth="5"
-                fill="transparent"
-              />
-              {/* Active Progress Arc: 32% */}
-              <circle
-                cx="50"
-                cy="50"
-                r="42"
-                stroke="#755BE8"
-                strokeWidth="5"
-                strokeDasharray={264}
-                strokeDashoffset={264 - (264 * 32) / 100}
-                strokeLinecap="round"
-                fill="transparent"
-              />
-            </svg>
+        <div className="bg-[#EEE9FB] rounded-2xl p-3.5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {chart.series.map((series) => (
+                <span key={series.label} className="flex items-center gap-1 text-[9px] font-semibold text-[#92929E]">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: series.color }} />
+                  {series.label}
+                </span>
+              ))}
+            </div>
+            <span className="text-[9px] font-bold text-[#92929E]">%</span>
+          </div>
 
-            {/* 32% Badge at top right */}
-            <span className="absolute top-1 right-2 px-1.5 py-0.5 rounded-full bg-[#755BE8] text-white font-bold text-[9px] shadow-sm">
-              32%
-            </span>
-
-            {/* Center Avatar */}
-            <div className="absolute inset-0 m-auto w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-sm flex items-center justify-center bg-[#F9F9FC]">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                alt="Jason Ranti"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
-                }}
-              />
+          <div className="relative h-28">
+            <div className="absolute inset-0 flex flex-col justify-between">
+              {[100, 75, 50, 25, 0].map((value) => (
+                <div key={value} className="flex items-center gap-2">
+                  <span className="w-5 text-right text-[8px] font-semibold text-[#92929E]">{value}</span>
+                  <div className="flex-1 border-b border-dashed border-[#D8D0F7]" />
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-y-0 left-7 right-1 flex items-end justify-around gap-1 pb-0.5">
+              {chart.labels.map((label, index) => (
+                <div key={label} className="flex h-full flex-1 items-end justify-center gap-0.5">
+                  {chart.series.map((series) => (
+                    <div
+                      key={series.label}
+                      className="w-[clamp(0.5rem,1.8vw,1rem)] rounded-t-sm shadow-sm"
+                      style={{
+                        height: `${Math.max(4, (series.values[index] / chart.max) * 100)}%`,
+                        backgroundColor: series.color,
+                      }}
+                      title={`${series.label}: ${series.values[index]}%`}
+                    />
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* User Greeting & Motivational Subtitle */}
-          <h3 className="text-sm font-bold text-[#19191F] mt-3 flex items-center justify-center gap-1.5">
-            Good Morning Jason <span className="text-amber-500">🔥</span>
-          </h3>
-          <p className="text-[10px] text-[#92929E] mt-0.5 max-w-[190px] leading-tight">
-            Continue your learning to achieve your target!
-          </p>
-        </div>
-
-        {/* Compact Bar Chart on Pale Lavender Surface */}
-        <div className="bg-[#EEE9FB] rounded-[20px] p-3.5 relative overflow-hidden">
-          {/* Chart Y Axis & Dashed Lines */}
-          <div className="relative h-24 flex flex-col justify-between">
-            {/* Grid Line 60 */}
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-bold text-[#92929E] w-3.5 text-right">60</span>
-              <div className="flex-1 border-b border-dashed border-[#DDD5F5]" />
-            </div>
-            {/* Grid Line 40 */}
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-bold text-[#92929E] w-3.5 text-right">40</span>
-              <div className="flex-1 border-b border-dashed border-[#DDD5F5]" />
-            </div>
-            {/* Grid Line 20 */}
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-bold text-[#92929E] w-3.5 text-right">20</span>
-              <div className="flex-1 border-b border-dashed border-[#DDD5F5]" />
-            </div>
-
-            {/* Vertical Bars Overlay */}
-            <div className="absolute inset-0 left-6 right-2 flex items-end justify-between px-2 pb-0.5">
-              {/* Group 1: 1-10 Aug */}
-              <div className="flex items-end gap-1.5 h-full pt-2">
-                <div className="w-2.5 h-[35%] bg-[#DDD5F5] rounded-full" />
-                <div className="w-2.5 h-[65%] bg-[#755BE8] rounded-full shadow-sm" />
-              </div>
-
-              {/* Group 2: 11-20 Aug */}
-              <div className="flex items-end gap-1.5 h-full pt-2">
-                <div className="w-2.5 h-[50%] bg-[#DDD5F5] rounded-full" />
-                <div className="w-2.5 h-[88%] bg-[#755BE8] rounded-full shadow-sm" />
-              </div>
-
-              {/* Group 3: 21-30 Aug */}
-              <div className="flex items-end gap-1.5 h-full pt-2">
-                <div className="w-2.5 h-[28%] bg-[#DDD5F5] rounded-full" />
-                <div className="w-2.5 h-[45%] bg-[#755BE8] rounded-full shadow-sm" />
-              </div>
-            </div>
-          </div>
-
-          {/* X Axis Labels */}
-          <div className="flex justify-between pl-6 pr-2 pt-2 text-[9px] text-[#92929E] font-semibold">
-            <span>1-10 Aug</span>
-            <span>11-20 Aug</span>
-            <span>21-30 Aug</span>
+          <div className="flex justify-around pl-7 pr-1 pt-2 text-[8px] font-semibold text-[#92929E]">
+            {chart.labels.map((label) => <span key={label}>{label}</span>)}
           </div>
         </div>
 

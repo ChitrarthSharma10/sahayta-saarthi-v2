@@ -59,6 +59,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  useEffect(() => {
+    const isBackendUser = user?._id
+      && !user._id.startsWith('demo-')
+      ;
+    if (!isBackendUser) return undefined;
+
+    const checkAccess = async () => {
+      try {
+        const response = await api.getUsers();
+        const currentUser = response?.users?.find((candidate) => candidate._id === user._id);
+        if (currentUser && currentUser.status !== 'Approved') {
+          setError('Account access disabled. Please contact an administrator.');
+          setUser(null);
+        }
+      } catch (err) {
+        console.warn('Could not verify account access:', err);
+      }
+    };
+
+    const accessInterval = window.setInterval(checkAccess, 5000);
+    return () => window.clearInterval(accessInterval);
+  }, [user]);
+
   const login = async (email, password) => {
     setLoading(true);
     setError(null);
@@ -107,6 +130,11 @@ export const AuthProvider = ({ children }) => {
       }
       throw new Error(res?.message || 'Failed to switch demo role');
     } catch (err) {
+      if (err.status) {
+        const msg = err.message || 'Unable to switch demo role';
+        setError(msg);
+        return { success: false, message: msg };
+      }
       console.warn('Backend login switch failed, using local demo profile:', err.message);
       // Fallback local mock user so UI remains fully testable even if offline
       const mockUser = {
@@ -132,6 +160,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('capacity_connect_user');
   };
 
+  const updateUser = (updatedUser) => setUser(updatedUser);
+
   return (
     <AuthContext.Provider
       value={{
@@ -142,6 +172,7 @@ export const AuthProvider = ({ children }) => {
         error,
         login,
         register,
+        updateUser,
         logout,
         switchDemoRole,
       }}

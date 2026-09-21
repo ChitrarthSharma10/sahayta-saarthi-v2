@@ -16,7 +16,7 @@ import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { useToast } from '../components/common/Toast';
 
 export const LoginPage = () => {
-  const { login, register, switchDemoRole, loading } = useAuth();
+  const { login, register, switchDemoRole, loading, error: authError } = useAuth();
   const { addToast } = useToast();
 
   const [isRegister, setIsRegister] = useState(false);
@@ -73,8 +73,13 @@ export const LoginPage = () => {
   const handleDemoLogin = async (selectedRole) => {
     setLocalError('');
     addToast(`Authenticating demo ${selectedRole}...`, 'info');
-    await switchDemoRole(selectedRole);
-    addToast(`Signed in as ${selectedRole}!`, 'success');
+    const res = await switchDemoRole(selectedRole);
+    if (res?.success) {
+      addToast(`Signed in as ${selectedRole}!`, 'success');
+    } else {
+      setLocalError(res?.message || 'Account access disabled.');
+      addToast(res?.message || 'Account access disabled.', 'error');
+    }
   };
 
   return (
@@ -161,10 +166,10 @@ export const LoginPage = () => {
         </div>
 
         {/* Error Alert */}
-        {localError && (
+        {(localError || authError) && (
           <div className="mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-            <span>{localError}</span>
+            <span>{localError || authError}</span>
           </div>
         )}
 

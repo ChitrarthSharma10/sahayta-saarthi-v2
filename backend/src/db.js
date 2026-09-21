@@ -25,6 +25,9 @@ const db = {
   assessments: [],
   library: [],
   announcements: [],
+  assessmentSubmissions: [],
+  feedback: [],
+  enrollments: [],
 };
 
 /* ─────────────────────────────────────────────
@@ -40,6 +43,7 @@ const trainee2Id   = uuidv4();
 const trainee3Id   = uuidv4();
 const trainee4Id   = uuidv4();
 const trainee5Id   = uuidv4();
+const demoTraineeId = 'user-jason';
 
 db.users = [
   // ── Admin
@@ -172,6 +176,20 @@ db.users = [
     },
     createdAt: new Date('2025-03-15T08:45:00Z'),
   },
+  {
+    _id: demoTraineeId,
+    name: 'Jason Ranti',
+    email: 'jason.ranti@coursue.com',
+    password: 'trainee@123',
+    role: 'Trainee',
+    status: 'Approved',
+    profile: {
+      designation: 'Product Designer',
+      department: 'Design',
+      enrolledCourses: [],
+    },
+    createdAt: new Date('2025-03-16T09:00:00Z'),
+  },
 ];
 
 // ── Courses ─────────────────────────────────────
@@ -271,6 +289,26 @@ db.courses = [
     maxEnrollment: 35,
     status: 'Active',
     createdAt: new Date('2025-03-20T10:00:00Z'),
+  },
+];
+
+// ── Course Enrollments ──────────────────────────
+// Enrollment is kept separate from course documents so admin course changes
+// do not invalidate trainee course relationships.
+db.enrollments = [
+  {
+    _id: uuidv4(),
+    userId: demoTraineeId,
+    courseId: course1Id,
+    status: 'Active',
+    enrolledAt: new Date('2025-03-18T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    userId: demoTraineeId,
+    courseId: course3Id,
+    status: 'Active',
+    enrolledAt: new Date('2025-03-19T10:00:00Z'),
   },
 ];
 
@@ -412,11 +450,67 @@ db.library = [
   },
   {
     _id: uuidv4(),
+    title: 'Leadership Essentials – Lecture',
+    description: 'YouTube lecture on leadership styles, team dynamics, and building trust.',
+    type: 'video',
+    url: 'https://www.youtube.com/watch?v=5GZ2WkQ8n4A',
+    courseId: course1Id,
+    courseTitle: 'Effective Leadership & Team Management',
+    uploadedBy: trainer1Id,
+    uploaderName: 'Priya Nair',
+    tags: ['leadership', 'lecture', 'youtube'],
+    duration: '24m',
+    createdAt: new Date('2025-02-13T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    title: 'Leadership Workshop Notes',
+    description: 'PDF notes covering leadership frameworks and team management practices.',
+    type: 'pdf',
+    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
+    courseId: course1Id,
+    courseTitle: 'Effective Leadership & Team Management',
+    uploadedBy: trainer1Id,
+    uploaderName: 'Priya Nair',
+    tags: ['leadership', 'notes', 'pdf'],
+    fileSize: '1.2 MB',
+    createdAt: new Date('2025-02-14T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    title: 'Professional Communication – Lecture',
+    description: 'YouTube lecture on clear communication, listening, and workplace presentations.',
+    type: 'video',
+    url: 'https://www.youtube.com/watch?v=HAnw168huqA',
+    courseId: course2Id,
+    courseTitle: 'Communication Skills for Professionals',
+    uploadedBy: trainer1Id,
+    uploaderName: 'Priya Nair',
+    tags: ['communication', 'lecture', 'youtube'],
+    duration: '31m',
+    createdAt: new Date('2025-02-16T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    title: 'Communication Skills Notes',
+    description: 'PDF notes with practical communication checklists and presentation guidance.',
+    type: 'pdf',
+    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
+    courseId: course2Id,
+    courseTitle: 'Communication Skills for Professionals',
+    uploadedBy: trainer1Id,
+    uploaderName: 'Priya Nair',
+    tags: ['communication', 'notes', 'pdf'],
+    fileSize: '980 KB',
+    createdAt: new Date('2025-02-17T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
     title: 'Cloud Computing Bootcamp – Session Recording',
     description:
       'Full recorded session of the live cloud computing bootcamp covering AWS core services and hands-on demos.',
     type: 'video',
-    url: 'https://www.youtube.com/watch?v=example-cloud-bootcamp',
+    url: 'https://www.youtube.com/watch?v=M988_fsOSWo',
     courseId: course3Id,
     courseTitle: 'Cloud Computing Fundamentals (AWS & Azure)',
     uploadedBy: trainer2Id,
@@ -424,6 +518,48 @@ db.library = [
     tags: ['cloud', 'video', 'aws', 'recorded session'],
     duration: '1h 45m',
     createdAt: new Date('2025-03-03T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    title: 'Cloud Fundamentals Notes',
+    description: 'PDF notes on IaaS, PaaS, SaaS, AWS core services, and Azure equivalents.',
+    type: 'pdf',
+    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
+    courseId: course3Id,
+    courseTitle: 'Cloud Computing Fundamentals (AWS & Azure)',
+    uploadedBy: trainer2Id,
+    uploaderName: 'Rahul Desai',
+    tags: ['cloud', 'aws', 'azure', 'notes', 'pdf'],
+    fileSize: '2.4 MB',
+    createdAt: new Date('2025-03-04T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    title: 'Agile and Scrum – Lecture',
+    description: 'YouTube lecture covering Scrum roles, ceremonies, and sprint planning.',
+    type: 'video',
+    url: 'https://www.youtube.com/watch?v=502ILHjX9EE',
+    courseId: course4Id,
+    courseTitle: 'Agile & Scrum Practitioner',
+    uploadedBy: trainer2Id,
+    uploaderName: 'Rahul Desai',
+    tags: ['agile', 'scrum', 'lecture', 'youtube'],
+    duration: '28m',
+    createdAt: new Date('2025-03-11T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    title: 'Agile Practitioner Notes',
+    description: 'PDF notes for sprint planning, reviews, retrospectives, and team velocity.',
+    type: 'pdf',
+    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
+    courseId: course4Id,
+    courseTitle: 'Agile & Scrum Practitioner',
+    uploadedBy: trainer2Id,
+    uploaderName: 'Rahul Desai',
+    tags: ['agile', 'scrum', 'notes', 'pdf'],
+    fileSize: '1.5 MB',
+    createdAt: new Date('2025-03-12T10:00:00Z'),
   },
   {
     _id: uuidv4(),
@@ -439,6 +575,34 @@ db.library = [
     tags: ['hr', 'compliance', 'pdf', 'reference'],
     fileSize: '1.8 MB',
     createdAt: new Date('2025-03-22T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    title: 'HR Practices – Lecture',
+    description: 'YouTube lecture on employee lifecycle, HR policies, and compliance essentials.',
+    type: 'video',
+    url: 'https://www.youtube.com/watch?v=6fQHLK1cIBY',
+    courseId: course5Id,
+    courseTitle: 'HR Practices & Compliance Essentials',
+    uploadedBy: trainer1Id,
+    uploaderName: 'Priya Nair',
+    tags: ['hr', 'compliance', 'lecture', 'youtube'],
+    duration: '26m',
+    createdAt: new Date('2025-03-23T10:00:00Z'),
+  },
+  {
+    _id: uuidv4(),
+    title: 'HR Compliance Notes',
+    description: 'PDF notes with compliance checklists and employee lifecycle reference material.',
+    type: 'pdf',
+    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
+    courseId: course5Id,
+    courseTitle: 'HR Practices & Compliance Essentials',
+    uploadedBy: trainer1Id,
+    uploaderName: 'Priya Nair',
+    tags: ['hr', 'compliance', 'notes', 'pdf'],
+    fileSize: '1.8 MB',
+    createdAt: new Date('2025-03-24T10:00:00Z'),
   },
 ];
 

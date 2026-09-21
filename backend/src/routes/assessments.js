@@ -136,6 +136,17 @@ router.post('/submit', (req, res) => {
   const scorePercent = Math.round((correctCount / total) * 100);
   const passed = scorePercent >= assessment.passingScore;
 
+  insertOne('assessmentSubmissions', {
+    assessmentId,
+    assessmentTitle: assessment.title,
+    courseId: assessment.courseId,
+    userId,
+    score: scorePercent,
+    passed,
+    learningHours: 1,
+    submittedAt: new Date(),
+  });
+
   return res.status(200).json({
     success: true,
     result: {

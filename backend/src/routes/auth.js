@@ -42,7 +42,7 @@ router.post('/login', (req, res) => {
   if (user.status === 'Rejected') {
     return res.status(403).json({
       success: false,
-      message: 'Your account has been rejected. Please contact the administrator.',
+      message: 'Account access disabled. Please contact an administrator.',
     });
   }
 

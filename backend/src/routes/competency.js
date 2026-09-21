@@ -57,6 +57,7 @@ router.get('/match/:courseId', (req, res) => {
         experience: trainer.profile?.experience,
         skills: trainer.skills || [],
         competencies: trainer.competencies || [],
+        qualifications: trainer.qualifications || [],
         matchedTerms,
         matchScore: matchedTerms.length,
       };

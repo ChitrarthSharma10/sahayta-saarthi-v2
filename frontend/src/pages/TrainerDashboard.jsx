@@ -17,11 +17,16 @@ import {
   Tag,
   BarChart3,
   Target,
+  ArrowLeft,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { QuestionnaireBuilderModal } from '../components/trainer/QuestionnaireBuilderModal';
 import { LibraryUploaderModal } from '../components/trainer/LibraryUploaderModal';
+import { StatisticsPanel } from '../components/coursue/StatisticsPanel';
+import { useToast } from '../components/common/Toast';
+import { FeedbackPanel } from '../components/common/FeedbackPanel';
+import { TrainerProfileManagement } from '../components/trainer/TrainerProfileManagement';
 
 /* ════════════════════════════════════════════════════════════════
    SUB-VIEWS
@@ -111,7 +116,7 @@ const DashboardView = ({ user, courses, library, assessments, onOpenQuestionnair
 );
 
 /* ── 2. Course Management ─────────────────────────────────────── */
-const CourseManagementView = ({ courses, searchQuery }) => {
+const CourseManagementView = ({ courses, searchQuery, onOpenCourse }) => {
   const filtered = courses.filter((c) =>
     !searchQuery ||
     c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -136,6 +141,7 @@ const CourseManagementView = ({ courses, searchQuery }) => {
           filtered.map((course, idx) => (
             <div
               key={course._id || idx}
+              onClick={() => onOpenCourse(course)}
               className="bg-white border border-[#EEEEF4] rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-[#755BE8]/30 transition-all group"
             >
               {/* Colour band */}
@@ -157,11 +163,118 @@ const CourseManagementView = ({ courses, searchQuery }) => {
                   <span className="flex items-center gap-1"><Tag className="w-3 h-3" /> {course.subject || 'General'}</span>
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {course.duration || 'Self-paced'}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={(event) => { event.stopPropagation(); onOpenCourse(course); }}
+                  className="w-full rounded-xl bg-[#EEE9FB] py-2.5 text-xs font-bold text-[#755BE8] hover:bg-[#E3DCFA] transition-colors"
+                >
+                  Manage Course
+                </button>
               </div>
             </div>
           ))
         )}
       </div>
+    </div>
+  );
+};
+
+const TrainerCourseView = ({ course, resources, assessments, onBack, onUpload, onQuestionnaire }) => {
+  const courseAssessments = assessments.filter((assessment) => assessment.courseId === course._id);
+
+  return (
+    <div className="space-y-6">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 text-xs font-bold text-[#755BE8] hover:text-[#6448DE]"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to Course Management
+      </button>
+
+      <div className="relative overflow-hidden rounded-3xl bg-[#19191F] min-h-[220px]">
+        <img src={course.thumbnail} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#19191F] via-[#19191F]/85 to-transparent" />
+        <div className="relative z-10 flex min-h-[220px] flex-col justify-end p-7">
+          <span className="mb-3 w-fit rounded-lg bg-[#EEE9FB] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#755BE8]">
+            Course workspace · {course.category || 'General'}
+          </span>
+          <h1 className="max-w-2xl text-2xl font-extrabold text-white">{course.title}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">{course.description}</p>
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-semibold text-white/70">
+            <span>{course.trainerName || 'Assigned trainer'}</span>
+            <span>{course.duration || 'Self-paced'}</span>
+            <span>{course.enrollmentCount || 0}/{course.maxEnrollment || 0} enrolled</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={onUpload}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#755BE8] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-[#755BE8]/20 hover:bg-[#6448DE]"
+        >
+          <Upload className="w-4 h-4" /> Upload Resource or Video
+        </button>
+        <button
+          type="button"
+          onClick={onQuestionnaire}
+          className="inline-flex items-center gap-2 rounded-xl border border-[#755BE8]/25 bg-[#EEE9FB] px-4 py-2.5 text-xs font-bold text-[#755BE8] hover:bg-[#E3DCFA]"
+        >
+          <Plus className="w-4 h-4" /> Create Questionnaire
+        </button>
+      </div>
+
+      <section className="rounded-3xl border border-[#EEEEF4] bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-[#19191F]">Published course content</h2>
+            <p className="mt-1 text-xs text-[#92929E]">Manage the lectures, notes, decks, and assessments trainees see.</p>
+          </div>
+          <span className="rounded-full bg-[#F6F7FB] px-2.5 py-1 text-[10px] font-bold text-[#92929E]">
+            {resources.length} resources
+          </span>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {resources.length === 0 ? (
+            <div className="rounded-2xl bg-[#F6F7FB] p-8 text-center text-xs text-[#92929E]">
+              No resources published for this course yet.
+            </div>
+          ) : resources.map((resource) => (
+            <div key={resource._id} className="flex items-center gap-3 rounded-2xl border border-[#EEEEF4] p-3">
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${resource.type === 'video' ? 'bg-red-50 text-red-500' : 'bg-[#EEE9FB] text-[#755BE8]'}`}>
+                {resource.type === 'video' ? <Video className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-[#19191F]">{resource.title}</p>
+                <p className="mt-0.5 text-[10px] uppercase font-semibold text-[#92929E]">{resource.type} · {resource.uploaderName || 'Trainer'}</p>
+              </div>
+              <a href={resource.url} target="_blank" rel="noreferrer" className="rounded-lg bg-[#F6F7FB] px-3 py-1.5 text-[10px] font-bold text-[#755BE8] hover:bg-[#EEE9FB]">
+                Open
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-[#EEEEF4] bg-white p-6 shadow-sm">
+        <h2 className="text-base font-bold text-[#19191F]">Course questionnaires</h2>
+        <div className="mt-4 space-y-2">
+          {courseAssessments.length === 0 ? (
+            <p className="rounded-2xl bg-[#F6F7FB] p-5 text-center text-xs text-[#92929E]">No questionnaires published for this course.</p>
+          ) : courseAssessments.map((assessment) => (
+            <div key={assessment._id} className="flex items-center justify-between rounded-2xl border border-[#EEEEF4] p-3">
+              <div>
+                <p className="text-xs font-bold text-[#19191F]">{assessment.title}</p>
+                <p className="mt-0.5 text-[10px] text-[#92929E]">{assessment.questions?.length || 0} questions · Passing {assessment.passingScore}%</p>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-600">Published</span>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };
@@ -340,10 +453,13 @@ const ContentLibraryView = ({ library, courses, searchQuery, onOpen }) => {
    ════════════════════════════════════════════════════════════════ */
 export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) => {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [courses,     setCourses]     = useState([]);
   const [library,     setLibrary]     = useState([]);
   const [assessments, setAssessments] = useState([]);
   const [loading,     setLoading]     = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedCourseResources, setSelectedCourseResources] = useState([]);
 
   const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false);
   const [isUploaderOpen,      setIsUploaderOpen]      = useState(false);
@@ -368,17 +484,51 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (!selectedCourse) {
+      setSelectedCourseResources([]);
+      return;
+    }
+
+    const loadCourseResources = () => {
+      api.getLibrary({ courseId: selectedCourse._id })
+        .then((response) => setSelectedCourseResources(response?.library || []))
+        .catch((err) => console.warn('Error fetching course resources:', err));
+    };
+
+    loadCourseResources();
+    const refreshInterval = window.setInterval(loadCourseResources, 5000);
+    return () => window.clearInterval(refreshInterval);
+  }, [selectedCourse]);
+
   const handleAssessmentCreated = (newAssessment) =>
     setAssessments((prev) => [newAssessment, ...prev]);
 
-  const handleResourceUploaded = (newItem) =>
+  const handleResourceUploaded = (newItem) => {
     setLibrary((prev) => [newItem, ...prev]);
+    setSelectedCourseResources((prev) => [newItem, ...prev]);
+  };
 
   /* ── View switcher ─────────────────────────────────────────── */
   const renderView = () => {
     switch (activeTab) {
       case 'courses-overview':
-        return <CourseManagementView courses={courses} searchQuery={searchQuery} />;
+        return selectedCourse ? (
+          <TrainerCourseView
+            course={selectedCourse}
+            resources={selectedCourseResources}
+            assessments={assessments}
+            onBack={() => setSelectedCourse(null)}
+            onUpload={() => setIsUploaderOpen(true)}
+            onQuestionnaire={() => setIsQuestionnaireOpen(true)}
+          />
+        ) : (
+          <CourseManagementView
+            courses={courses}
+            searchQuery={searchQuery}
+            onOpenCourse={setSelectedCourse}
+          />
+        );
       case 'assessments-builder':
         return (
           <QuestionnaireView
@@ -397,17 +547,30 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
             onOpen={() => setIsUploaderOpen(true)}
           />
         );
+      case 'feedback':
+        return <FeedbackPanel />;
+      case 'profile-management':
+        return <TrainerProfileManagement />;
       case 'dashboard':
       default:
         return (
-          <DashboardView
-            user={user}
-            courses={courses}
-            library={library}
-            assessments={assessments}
-            onOpenQuestionnaire={() => setIsQuestionnaireOpen(true)}
-            onOpenUploader={() => setIsUploaderOpen(true)}
-          />
+          <div className="flex flex-col xl:flex-row items-start gap-6">
+            <div className="flex-1 min-w-0 w-full">
+              <DashboardView
+                user={user}
+                courses={courses}
+                library={library}
+                assessments={assessments}
+                onOpenQuestionnaire={() => setIsQuestionnaireOpen(true)}
+                onOpenUploader={() => setIsUploaderOpen(true)}
+              />
+            </div>
+            <StatisticsPanel
+              variant="trainer"
+              onAddMentor={() => addToast('Browse the mentor directory to add a trainer connection.', 'info')}
+              onSeeAllMentors={() => addToast('Loading the full trainer network...', 'info')}
+            />
+          </div>
         );
     }
   };
@@ -420,6 +583,7 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
       {isQuestionnaireOpen && (
         <QuestionnaireBuilderModal
           courses={courses}
+          initialCourseId={selectedCourse?._id}
           onClose={() => setIsQuestionnaireOpen(false)}
           onCreated={handleAssessmentCreated}
         />
@@ -427,6 +591,7 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
       {isUploaderOpen && (
         <LibraryUploaderModal
           courses={courses}
+          initialCourseId={selectedCourse?._id}
           onClose={() => setIsUploaderOpen(false)}
           onUploaded={handleResourceUploaded}
         />

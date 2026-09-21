@@ -13,10 +13,52 @@ import {
   Bell,
   Plus,
   AlertCircle,
+  Trash2,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/common/Toast';
+
+const FeedbackInbox = () => {
+  const [feedback, setFeedback] = useState([]);
+
+  useEffect(() => {
+    const loadFeedback = () => api.getFeedback()
+      .then((response) => setFeedback(response?.feedback || []))
+      .catch((error) => console.warn('Could not load feedback:', error));
+    loadFeedback();
+    const refreshInterval = window.setInterval(loadFeedback, 5000);
+    return () => window.clearInterval(refreshInterval);
+  }, []);
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-xl font-extrabold text-[#19191F]">Feedback Inbox</h2>
+        <p className="mt-1 text-sm text-[#92929E]">Review feedback submitted by trainees and trainers.</p>
+      </div>
+      {feedback.length === 0 ? (
+        <div className="rounded-3xl border border-[#EEEEF4] bg-white py-16 text-center text-xs text-[#92929E]">No feedback received yet.</div>
+      ) : (
+        <div className="space-y-3">
+          {feedback.map((item) => (
+            <article key={item._id} className="rounded-2xl border border-[#EEEEF4] bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-[#19191F]">{item.userName}</h3>
+                  <p className="mt-0.5 text-[11px] text-[#92929E]">{item.userRole} · {item.category}</p>
+                </div>
+                <span className="text-sm font-bold text-amber-500">{'★'.repeat(item.rating)}<span className="text-[#D8D8E2]">{'★'.repeat(5 - item.rating)}</span></span>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-[#555563]">{item.message}</p>
+              <p className="mt-3 text-[10px] text-[#92929E]">{new Date(item.createdAt).toLocaleString('en-IN')}</p>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ════════════════════════════════════════════════════════════════
    SHARED DATA HOOK
@@ -33,6 +75,15 @@ const useAdminData = () => {
   const { addToast } = useToast();
 
   useEffect(() => {
+    const refreshUsers = async () => {
+      try {
+        const usersRes = await api.getUsers();
+        if (usersRes?.users) setUsers(usersRes.users);
+      } catch (err) {
+        console.warn('Error refreshing user access statuses:', err);
+      }
+    };
+
     const fetchData = async () => {
       try {
         const [usersRes, coursesRes, announcementsRes] = await Promise.all([
@@ -53,22 +104,33 @@ const useAdminData = () => {
       }
     };
     fetchData();
+
+    const refreshInterval = window.setInterval(refreshUsers, 5000);
+    return () => window.clearInterval(refreshInterval);
   }, []);
 
   useEffect(() => {
     if (!selectedCourseId) return;
-    const fetchMatches = async () => {
-      setMatchingLoading(true);
+    const fetchMatches = async (showLoading = false) => {
+      if (showLoading) setMatchingLoading(true);
       try {
         const res = await api.getCompetencyMatches(selectedCourseId);
         if (res?.success) setMatchingResults(res);
       } catch (err) {
         console.warn('Error fetching competency match:', err);
       } finally {
-        setMatchingLoading(false);
+        if (showLoading) setMatchingLoading(false);
       }
     };
-    fetchMatches();
+
+    fetchMatches(true);
+    const refreshInterval = window.setInterval(() => fetchMatches(), 5000);
+    const handleAccessChange = () => fetchMatches();
+    window.addEventListener('capacity-connect-user-access-updated', handleAccessChange);
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('capacity-connect-user-access-updated', handleAccessChange);
+    };
   }, [selectedCourseId]);
 
   const handleStatusChange = async (userId, newStatus) => {
@@ -78,6 +140,7 @@ const useAdminData = () => {
       if (res?.success) {
         addToast(`User marked as ${newStatus} successfully.`, newStatus === 'Approved' ? 'success' : 'info');
         setUsers((prev) => prev.map((u) => (u._id === userId ? { ...u, status: newStatus } : u)));
+        window.dispatchEvent(new Event('capacity-connect-user-access-updated'));
       }
     } catch (err) {
       addToast(err.message || `Failed to update user to ${newStatus}.`, 'error');
@@ -87,7 +150,7 @@ const useAdminData = () => {
   };
 
   return {
-    users, courses, announcements, selectedCourseId, setSelectedCourseId,
+    users, courses, announcements, setAnnouncements, selectedCourseId, setSelectedCourseId,
     matchingResults, matchingLoading, loading, actionLoading, handleStatusChange, addToast,
   };
 };
@@ -342,7 +405,7 @@ const UserApprovalsView = ({ users, actionLoading, handleStatusChange, searchQue
                                 onClick={() => handleStatusChange(u._id, 'Rejected')}
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-500 text-rose-500 hover:text-white text-xs font-bold border border-rose-100 hover:border-rose-500 transition-all disabled:opacity-50"
                               >
-                                <XCircle className="w-3.5 h-3.5" /> Reject
+                                <XCircle className="w-3.5 h-3.5" /> {isApproved ? 'Revoke Access' : 'Reject'}
                               </button>
                             )}
                           </div>
@@ -447,6 +510,19 @@ const CompetencyView = ({ courses, selectedCourseId, setSelectedCourseId, matchi
                   </div>
                 </div>
 
+                {trainer.qualifications?.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#92929E] mb-1.5">Verified documents submitted</p>
+                    <div className="space-y-1">
+                      {trainer.qualifications.map((qualification, index) => (
+                        <a key={`${qualification.title}-${index}`} href={qualification.url} target="_blank" rel="noreferrer" className="block truncate text-[10px] font-semibold text-[#755BE8] hover:underline">
+                          {qualification.title}{qualification.issuer ? ` · ${qualification.issuer}` : ''}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-3 border-t border-[#EEEEF4] flex items-center justify-between">
                   <span className="text-[11px] text-[#92929E]">Rank #{rankIdx + 1} Best Fit</span>
                   <button
@@ -472,11 +548,59 @@ const CompetencyView = ({ courses, selectedCourseId, setSelectedCourseId, matchi
 );
 
 /* ── 4. Announcements ──────────────────────────────────────────── */
-const AnnouncementsView = ({ announcements }) => (
+const AnnouncementComposer = ({ user, onClose, onCreated }) => {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [type, setType] = useState('announcement');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!title.trim() || !content.trim()) return;
+    setSaving(true);
+    try {
+      const response = await api.createAnnouncement({
+        title,
+        content,
+        type,
+        postedBy: user?._id,
+        postedByName: user?.name,
+      });
+      if (response?.announcement) onCreated(response.announcement);
+    } catch (error) {
+      window.alert(error.message || 'Failed to publish announcement.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-4 rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-[#19191F]">New Announcement</h2>
+          <button type="button" onClick={onClose} className="text-xs font-semibold text-[#92929E]">Cancel</button>
+        </div>
+        <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Announcement title" className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-sm outline-none focus:border-[#755BE8]" required />
+        <select value={type} onChange={(event) => setType(event.target.value)} className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-xs outline-none focus:border-[#755BE8]">
+          <option value="announcement">Announcement</option>
+          <option value="achievement">Achievement</option>
+        </select>
+        <textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="Write the message for all learners and trainers" rows={5} className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-sm outline-none focus:border-[#755BE8]" required />
+        <button disabled={saving} className="w-full rounded-xl bg-[#755BE8] py-3 text-xs font-bold text-white disabled:opacity-50">{saving ? 'Publishing...' : 'Publish Announcement'}</button>
+      </form>
+    </div>
+  );
+};
+
+const AnnouncementsView = ({ announcements, onCreate, onDelete }) => (
   <div className="space-y-5">
-    <div>
-      <h2 className="text-xl font-extrabold text-[#19191F]">Announcements</h2>
-      <p className="text-sm text-[#92929E] mt-1">Platform-wide notifications broadcast to all LMS participants</p>
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <h2 className="text-xl font-extrabold text-[#19191F]">Announcements</h2>
+        <p className="text-sm text-[#92929E] mt-1">Platform-wide notifications broadcast to all LMS participants</p>
+      </div>
+      <button type="button" onClick={onCreate} className="inline-flex items-center gap-2 rounded-xl bg-[#755BE8] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#6448DE]"><Plus className="w-4 h-4" /> New Announcement</button>
     </div>
 
     <div className="space-y-4">
@@ -512,6 +636,7 @@ const AnnouncementsView = ({ announcements }) => (
                 </p>
               )}
             </div>
+            <button type="button" onClick={() => onDelete(ann)} className="shrink-0 rounded-lg p-2 text-[#92929E] hover:bg-rose-50 hover:text-rose-500" title="Delete announcement"><Trash2 className="w-4 h-4" /></button>
           </div>
         ))
       )}
@@ -525,11 +650,30 @@ const AnnouncementsView = ({ announcements }) => (
 export const AdminDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) => {
   const { user } = useAuth();
   const {
-    users, courses, announcements,
+    users, courses, announcements, setAnnouncements,
     selectedCourseId, setSelectedCourseId,
     matchingResults, matchingLoading,
     actionLoading, handleStatusChange, addToast,
   } = useAdminData();
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
+
+  const handleAnnouncementCreated = (announcement) => {
+    setAnnouncements((previous) => [announcement, ...previous]);
+    window.dispatchEvent(new Event('capacity-connect-announcements-updated'));
+    setIsAnnouncementOpen(false);
+    addToast('Announcement published to all portals.', 'success');
+  };
+
+  const handleAnnouncementDeleted = async (announcement) => {
+    try {
+      await api.deleteAnnouncement(announcement._id);
+      setAnnouncements((previous) => previous.filter((item) => item._id !== announcement._id));
+      window.dispatchEvent(new Event('capacity-connect-announcements-updated'));
+      addToast('Announcement deleted from all portals.', 'info');
+    } catch (error) {
+      addToast(error.message || 'Failed to delete announcement.', 'error');
+    }
+  };
 
   const renderView = () => {
     switch (activeTab) {
@@ -547,7 +691,9 @@ export const AdminDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) =>
           />
         );
       case 'announcements':
-        return <AnnouncementsView announcements={announcements} />;
+        return <AnnouncementsView announcements={announcements} onCreate={() => setIsAnnouncementOpen(true)} onDelete={handleAnnouncementDeleted} />;
+      case 'feedback':
+        return <FeedbackInbox />;
       case 'dashboard':
       default:
         return <DashboardView user={user} users={users} courses={courses} announcements={announcements} />;
@@ -557,6 +703,13 @@ export const AdminDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) =>
   return (
     <div className="animate-in fade-in duration-200 max-w-7xl mx-auto">
       {renderView()}
+      {isAnnouncementOpen && (
+        <AnnouncementComposer
+          user={user}
+          onClose={() => setIsAnnouncementOpen(false)}
+          onCreated={handleAnnouncementCreated}
+        />
+      )}
     </div>
   );
 };

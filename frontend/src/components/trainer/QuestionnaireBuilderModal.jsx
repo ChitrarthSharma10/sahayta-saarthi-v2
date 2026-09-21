@@ -13,10 +13,10 @@ import {
 import { api } from '../../services/api';
 import { useToast } from '../common/Toast';
 
-export const QuestionnaireBuilderModal = ({ courses, onClose, onCreated }) => {
+export const QuestionnaireBuilderModal = ({ courses, initialCourseId, onClose, onCreated }) => {
   const { addToast } = useToast();
 
-  const [courseId, setCourseId] = useState(courses[0]?._id || '');
+  const [courseId, setCourseId] = useState(initialCourseId || courses[0]?._id || '');
   const [title, setTitle] = useState('');
   const [passingScore, setPassingScore] = useState(60);
   const [deadline, setDeadline] = useState('');

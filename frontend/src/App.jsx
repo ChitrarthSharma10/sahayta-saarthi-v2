@@ -22,12 +22,12 @@ const MainLayout = () => {
     return <LoginPage />;
   }
 
-  // Trainee → full Coursue standalone dashboard (has its own sidebar/header)
+  // Trainee → full Capacity Connect trainee dashboard (has its own sidebar/header)
   if (role === 'Trainee') {
     return <CoursueDashboard />;
   }
 
-  // Trainer & Admin → shared Coursue-themed layout shell
+  // Trainer & Admin → shared Capacity Connect layout shell
   return (
     <div className="min-h-screen bg-[#F6F7FB] text-[#19191F] flex flex-col md:flex-row antialiased">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />

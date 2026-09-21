@@ -9,6 +9,8 @@ import { StatisticsPanel } from '../components/coursue/StatisticsPanel';
 import { AssessmentModal } from '../components/trainee/AssessmentModal';
 import { useToast } from '../components/common/Toast';
 import { api } from '../services/api';
+import { FeedbackPanel } from '../components/common/FeedbackPanel';
+import { useAuth } from '../context/AuthContext';
 import {
   X, CheckCircle2, Play, Sparkles, BookOpen, Clock, Users,
   FolderArchive, Video, Presentation, FileText, ExternalLink,
@@ -20,7 +22,7 @@ import {
    ════════════════════════════════════════════════════════════════ */
 
 /* ── My Courses view ─────────────────────────────────────────── */
-const CoursesView = ({ courses, assessments, searchQuery }) => {
+const CoursesView = ({ courses, assessments, searchQuery, onOpenCourse, enrolledCourseIds, onlyEnrolled, onEnroll, onOptOut }) => {
   const [selectedAssessment, setSelectedAssessment] = useState(null);
 
   const courseProgressMap = {
@@ -32,6 +34,7 @@ const CoursesView = ({ courses, assessments, searchQuery }) => {
   };
 
   const filtered = courses.filter((c) => {
+    if (onlyEnrolled && !enrolledCourseIds.has(c._id)) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -52,7 +55,8 @@ const CoursesView = ({ courses, assessments, searchQuery }) => {
         {filtered.length === 0 ? (
           <div className="col-span-2 py-16 text-center rounded-3xl bg-white border border-[#EEEEF4]">
             <BookOpen className="w-10 h-10 text-[#92929E] mx-auto mb-3" />
-            <p className="text-sm font-semibold text-[#19191F]">No courses found</p>
+            <p className="text-sm font-semibold text-[#19191F]">{onlyEnrolled ? 'No enrolled courses yet' : 'No courses found'}</p>
+            {onlyEnrolled && <p className="mt-1 text-xs text-[#92929E]">Browse All Courses to find your next learning track.</p>}
           </div>
         ) : (
           filtered.map((course) => {
@@ -61,6 +65,7 @@ const CoursesView = ({ courses, assessments, searchQuery }) => {
             return (
               <div
                 key={course._id}
+                onClick={() => onOpenCourse(course)}
                 className="rounded-3xl bg-white border border-[#EEEEF4] hover:border-[#755BE8]/30 hover:shadow-md transition-all overflow-hidden flex flex-col group"
               >
                 <div className="relative h-36 overflow-hidden bg-[#F6F7FB]">
@@ -110,22 +115,167 @@ const CoursesView = ({ courses, assessments, searchQuery }) => {
                     {courseQuiz ? (
                       <button
                         type="button"
-                        onClick={() => setSelectedAssessment(courseQuiz)}
+                        onClick={(event) => { event.stopPropagation(); setSelectedAssessment(courseQuiz); }}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#755BE8] hover:bg-[#6448DE] text-white text-xs font-bold shadow-sm transition-all"
                       >
                         Take Quiz <ChevronRight className="w-3 h-3" />
                       </button>
                     ) : (
-                      <button className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#F6F7FB] hover:bg-[#EEE9FB] text-[#92929E] hover:text-[#755BE8] text-xs font-semibold border border-[#EEEEF4] transition-colors">
+                      <button
+                        type="button"
+                        onClick={(event) => { event.stopPropagation(); onOpenCourse(course); }}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#F6F7FB] hover:bg-[#EEE9FB] text-[#92929E] hover:text-[#755BE8] text-xs font-semibold border border-[#EEEEF4] transition-colors"
+                      >
                         View Deck <ChevronRight className="w-3 h-3" />
                       </button>
                     )}
                   </div>
+                  {!onlyEnrolled && (
+                    <button
+                      type="button"
+                      onClick={(event) => { event.stopPropagation(); onEnroll(course._id); }}
+                      disabled={enrolledCourseIds.has(course._id)}
+                      className="mt-2 w-full rounded-xl bg-[#EEE9FB] py-2 text-xs font-bold text-[#755BE8] hover:bg-[#E3DCFA] disabled:cursor-default disabled:opacity-60"
+                    >
+                      {enrolledCourseIds.has(course._id) ? 'Already Enrolled' : 'Enroll in Course'}
+                    </button>
+                  )}
+                  {onlyEnrolled && (
+                    <button
+                      type="button"
+                      onClick={(event) => { event.stopPropagation(); onOptOut(course._id); }}
+                      className="mt-2 w-full rounded-xl border border-rose-100 bg-rose-50 py-2 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:text-white"
+                    >
+                      Opt Out of Course
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })
         )}
+      </div>
+
+      {selectedAssessment && (
+        <AssessmentModal
+          assessment={selectedAssessment}
+          onClose={() => setSelectedAssessment(null)}
+          onCompleted={() => setSelectedAssessment(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+const getYouTubeEmbedUrl = (url) => {
+  try {
+    const parsed = new URL(url);
+    const videoId = parsed.searchParams.get('v') || parsed.pathname.split('/').pop();
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  } catch {
+    return null;
+  }
+};
+
+const CourseDetailView = ({ course, resources, assessments, onBack }) => {
+  const [selectedAssessment, setSelectedAssessment] = useState(null);
+  const video = resources.find((item) => item.type === 'video');
+  const notes = resources.filter((item) => item.type === 'pdf' || item.type === 'doc' || item.type === 'slides');
+  const courseQuiz = assessments.find((assessment) => assessment.courseId === course._id);
+
+  return (
+    <div className="space-y-6">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 text-xs font-bold text-[#755BE8] hover:text-[#6448DE]"
+      >
+        <ChevronRight className="w-4 h-4 rotate-180" /> Back to My Courses
+      </button>
+
+      <div className="relative overflow-hidden rounded-3xl bg-[#19191F] min-h-[220px]">
+        <img src={course.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-35" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#19191F] via-[#19191F]/80 to-transparent" />
+        <div className="relative z-10 flex min-h-[220px] max-w-2xl flex-col justify-end p-7">
+          <span className="mb-3 w-fit rounded-lg bg-[#EEE9FB] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#755BE8]">
+            {course.category} · {course.level}
+          </span>
+          <h1 className="text-2xl font-extrabold text-white">{course.title}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-white/70">{course.description}</p>
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-semibold text-white/70">
+            <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {course.duration}</span>
+            <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {course.trainerName}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)] gap-6 items-start">
+        <section className="rounded-3xl bg-white border border-[#EEEEF4] p-5 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-bold text-[#19191F]">Lecture room</h2>
+              <p className="text-xs text-[#92929E] mt-1">Watch the connected YouTube lecture for this course.</p>
+            </div>
+            <Video className="w-5 h-5 text-[#755BE8]" />
+          </div>
+          {video && getYouTubeEmbedUrl(video.url) ? (
+            <div className="overflow-hidden rounded-2xl bg-[#19191F] aspect-video">
+              <iframe
+                title={video.title}
+                src={getYouTubeEmbedUrl(video.url)}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-[#F6F7FB] p-8 text-center text-xs text-[#92929E]">
+              No lecture has been published for this course yet.
+            </div>
+          )}
+          {video && <p className="mt-3 text-xs font-semibold text-[#19191F]">{video.title}</p>}
+        </section>
+
+        <section className="rounded-3xl bg-white border border-[#EEEEF4] p-5 shadow-card">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-bold text-[#19191F]">Course materials</h2>
+              <p className="text-xs text-[#92929E] mt-1">Notes and supporting resources</p>
+            </div>
+            <FolderArchive className="w-5 h-5 text-[#755BE8]" />
+          </div>
+          <div className="space-y-2.5">
+            {notes.length === 0 ? (
+              <p className="rounded-2xl bg-[#F6F7FB] p-5 text-center text-xs text-[#92929E]">No notes uploaded yet.</p>
+            ) : notes.map((note) => (
+              <a
+                key={note._id}
+                href={note.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-[#EEEEF4] p-3 hover:border-[#755BE8]/30 hover:bg-[#EEE9FB]/30 transition-colors"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EEE9FB] text-[#755BE8]">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-bold text-[#19191F]">{note.title}</p>
+                  <p className="mt-0.5 text-[10px] uppercase font-semibold text-[#92929E]">{note.type} · Open resource</p>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 shrink-0 text-[#92929E]" />
+              </a>
+            ))}
+          </div>
+          {courseQuiz && (
+            <button
+              type="button"
+              onClick={() => setSelectedAssessment(courseQuiz)}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#755BE8] py-3 text-xs font-bold text-white hover:bg-[#6448DE] transition-colors"
+            >
+              <FileCheck className="w-4 h-4" /> Take course quiz
+            </button>
+          )}
+        </section>
       </div>
 
       {selectedAssessment && (
@@ -295,10 +445,11 @@ const LibraryView = ({ library, searchQuery }) => {
 };
 
 /* ════════════════════════════════════════════════════════════════
-   MAIN COURSUE DASHBOARD (Trainee shell)
+  MAIN CAPACITY CONNECT DASHBOARD (Trainee shell)
    ════════════════════════════════════════════════════════════════ */
 export const CoursueDashboard = () => {
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [activeNav,   setActiveNav]   = useState('Dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -306,31 +457,99 @@ export const CoursueDashboard = () => {
   const [courses,     setCourses]     = useState([]);
   const [assessments, setAssessments] = useState([]);
   const [library,     setLibrary]     = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [courseResources, setCourseResources] = useState([]);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [coursesRes, assessmentsRes, libraryRes] = await Promise.all([
+        const [coursesRes, assessmentsRes, libraryRes, enrollmentsRes] = await Promise.all([
           api.getCourses(),
           api.getAssessments(),
           api.getLibrary(),
+          api.getEnrollments(user?._id || 'demo-trainee'),
         ]);
         if (coursesRes?.courses)         setCourses(coursesRes.courses);
         if (assessmentsRes?.assessments) setAssessments(assessmentsRes.assessments);
         if (libraryRes?.library)         setLibrary(libraryRes.library);
+        if (enrollmentsRes?.enrollments) setEnrolledCourseIds(new Set(enrollmentsRes.enrollments.map((item) => item.courseId)));
       } catch (err) {
         console.warn('Error loading trainee data:', err);
       }
     };
     fetchData();
-  }, []);
+
+    // Keep the trainee portal in sync with trainer publications while it is open.
+    const refreshInterval = window.setInterval(async () => {
+      try {
+        const [assessmentsRes, libraryRes] = await Promise.all([
+          api.getAssessments(),
+          api.getLibrary(),
+        ]);
+        if (assessmentsRes?.assessments) setAssessments(assessmentsRes.assessments);
+        if (libraryRes?.library) setLibrary(libraryRes.library);
+      } catch (err) {
+        console.warn('Error refreshing trainee content:', err);
+      }
+    }, 5000);
+
+    return () => window.clearInterval(refreshInterval);
+  }, [user?._id]);
+
+  const handleEnroll = async (courseId) => {
+    try {
+      await api.enrollInCourse(user?._id || 'demo-trainee', courseId);
+      setEnrolledCourseIds((previous) => new Set([...previous, courseId]));
+      addToast('Course added to My Courses.', 'success');
+    } catch (error) {
+      addToast(error.message || 'Could not enroll in course.', 'error');
+    }
+  };
+
+  const handleOptOut = async (courseId) => {
+    try {
+      await api.optOutOfCourse(user?._id || 'demo-trainee', courseId);
+      setEnrolledCourseIds((previous) => {
+        const next = new Set(previous);
+        next.delete(courseId);
+        return next;
+      });
+      if (selectedCourse?._id === courseId) setSelectedCourse(null);
+      addToast('You opted out of the course.', 'info');
+    } catch (error) {
+      addToast(error.message || 'Could not opt out of course.', 'error');
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedCourse) {
+      setCourseResources([]);
+      return;
+    }
+
+    api.getLibrary({ courseId: selectedCourse._id })
+      .then((response) => setCourseResources(response?.library || []))
+      .catch((error) => {
+        console.warn('Error loading course resources:', error);
+        setCourseResources([]);
+      });
+
+    const refreshCourseResources = window.setInterval(() => {
+      api.getLibrary({ courseId: selectedCourse._id })
+        .then((response) => setCourseResources(response?.library || []))
+        .catch((error) => console.warn('Error refreshing course resources:', error));
+    }, 5000);
+
+    return () => window.clearInterval(refreshCourseResources);
+  }, [selectedCourse]);
 
   // Dashboard-specific modal state
   const [activeModal,   setActiveModal]   = useState(null);
   const [selectedItem,  setSelectedItem]  = useState(null);
 
   const handleJoinClick       = () => setActiveModal('join');
-  const handleCourseClick     = (c) => { setSelectedItem(c); setActiveModal('course'); };
+  const handleCourseClick     = (course) => { setSelectedCourse(course); setActiveNav('Courses'); };
   const handleLessonAction    = (l) => { setSelectedItem(l); setActiveModal('lesson'); };
   const handleProgressAction  = (m) => addToast(`Viewing progress for ${m.title}`, 'info');
   const handleAddMentor       = () => addToast('Browse directory to discover accredited mentors', 'info');
@@ -340,18 +559,54 @@ export const CoursueDashboard = () => {
   const renderMainContent = () => {
     switch (activeNav) {
       case 'Courses':
-        return <CoursesView courses={courses} assessments={assessments} searchQuery={searchQuery} />;
+        return selectedCourse ? (
+          <CourseDetailView
+            course={selectedCourse}
+            resources={courseResources}
+            assessments={assessments}
+            onBack={() => setSelectedCourse(null)}
+          />
+        ) : (
+          <CoursesView
+            courses={courses}
+            assessments={assessments}
+            searchQuery={searchQuery}
+            onOpenCourse={setSelectedCourse}
+            enrolledCourseIds={enrolledCourseIds}
+            onlyEnrolled
+            onEnroll={handleEnroll}
+            onOptOut={handleOptOut}
+          />
+        );
+      case 'All Courses':
+        return (
+          <CoursesView
+            courses={courses}
+            assessments={assessments}
+            searchQuery={searchQuery}
+            onOpenCourse={setSelectedCourse}
+            enrolledCourseIds={enrolledCourseIds}
+            onEnroll={handleEnroll}
+            onOptOut={handleOptOut}
+          />
+        );
       case 'Quizzes':
         return <QuizzesView assessments={assessments} />;
       case 'Library':
         return <LibraryView library={library} searchQuery={searchQuery} />;
+      case 'Feedback':
+        return <FeedbackPanel />;
       case 'Dashboard':
       default:
         return (
           <>
             <HeroBanner onJoinClick={handleJoinClick} />
             <CourseProgressCard onActionClick={handleProgressAction} />
-            <ContinueWatchingCarousel searchQuery={searchQuery} onCourseClick={handleCourseClick} />
+            <ContinueWatchingCarousel
+              courses={courses.filter((course) => enrolledCourseIds.has(course._id))}
+              searchQuery={searchQuery}
+              onCourseClick={handleCourseClick}
+            />
             <LessonsTable
               onLessonAction={handleLessonAction}
               onSeeAll={() => addToast('Displaying full syllabus curriculum', 'info')}
@@ -379,7 +634,11 @@ export const CoursueDashboard = () => {
             <main className="flex-1 min-w-0 w-full space-y-2">
               {renderMainContent()}
             </main>
-            <StatisticsPanel onAddMentor={handleAddMentor} onSeeAllMentors={handleSeeAllMentors} />
+            <StatisticsPanel
+              variant="trainee"
+              onAddMentor={handleAddMentor}
+              onSeeAllMentors={handleSeeAllMentors}
+            />
           </div>
         ) : (
           /* Sub-views: full-width single column */

@@ -66,4 +66,52 @@ router.patch('/:id/status', (req, res) => {
   });
 });
 
+router.patch('/:id/profile', (req, res) => {
+  const user = findById('users', req.params.id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+
+  if (user.role !== 'Trainer') {
+    return res.status(400).json({ success: false, message: 'Only trainer profiles can be updated here.' });
+  }
+
+  const {
+    profile = {},
+    skills = [],
+    competencies = [],
+    qualifications = [],
+  } = req.body;
+
+  const cleanList = (items) => Array.isArray(items)
+    ? items.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+  const cleanQualifications = Array.isArray(qualifications)
+    ? qualifications
+      .filter((item) => item && item.title && item.url)
+      .map((item) => ({
+        title: String(item.title).trim(),
+        issuer: String(item.issuer || '').trim(),
+        type: String(item.type || 'Certificate').trim(),
+        url: String(item.url).trim(),
+      }))
+    : [];
+
+  const updated = updateById('users', req.params.id, {
+    profile: {
+      ...user.profile,
+      designation: String(profile.designation || '').trim(),
+      department: String(profile.department || '').trim(),
+      bio: String(profile.bio || '').trim(),
+      experience: Number(profile.experience) || 0,
+    },
+    skills: cleanList(skills),
+    competencies: cleanList(competencies),
+    qualifications: cleanQualifications,
+  });
+
+  const { password: _pw, ...safeUser } = updated;
+  return res.json({ success: true, message: 'Trainer profile updated.', user: safeUser });
+});
+
 module.exports = router;
