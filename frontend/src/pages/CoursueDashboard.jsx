@@ -548,7 +548,11 @@ export const CoursueDashboard = () => {
   const [activeModal,   setActiveModal]   = useState(null);
   const [selectedItem,  setSelectedItem]  = useState(null);
 
-  const handleJoinClick       = () => setActiveModal('join');
+  const handleJoinClick = () => {
+    setSelectedCourse(null);
+    setActiveModal(null);
+    setActiveNav('All Courses');
+  };
   const handleCourseClick     = (course) => { setSelectedCourse(course); setActiveNav('Courses'); };
   const handleLessonAction    = (l) => { setSelectedItem(l); setActiveModal('lesson'); };
   const handleProgressAction  = (m) => addToast(`Viewing progress for ${m.title}`, 'info');

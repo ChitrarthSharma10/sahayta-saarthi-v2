@@ -2,10 +2,12 @@
  * routes/courses.js
  * GET /api/courses      – List all courses (with trainer details embedded)
  * GET /api/courses/:id  – Single course detail
+ * POST /api/courses     – Create a new course
+ * DELETE /api/courses/:id – Delete a course and its linked materials
  */
 
 const express = require('express');
-const { findAll, findById, findOne } = require('../db');
+const { findAll, findById, findOne, insertOne, deleteById } = require('../db');
 
 const router = express.Router();
 
@@ -17,6 +19,7 @@ function enrichCourse(course) {
   const trainer = findOne('users', (u) => u._id === course.trainerId);
   return {
     ...course,
+    requiredSkills: Array.isArray(course.requiredSkills) ? course.requiredSkills : [],
     trainer: trainer
       ? {
           _id: trainer._id,
@@ -54,6 +57,59 @@ router.get('/', (req, res) => {
 });
 
 /* ─────────────────────────────────────────────
+   POST /api/courses
+───────────────────────────────────────────── */
+router.post('/', (req, res) => {
+  const {
+    title,
+    description,
+    subject,
+    category,
+    duration,
+    level = 'Beginner',
+    trainerId = null,
+    trainerName = 'Unassigned',
+    requiredSkills = [],
+  } = req.body;
+
+  if (!title?.trim() || !subject?.trim() || !category?.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Title, subject, and category are required.',
+    });
+  }
+
+  const normalizedSkills = Array.isArray(requiredSkills)
+    ? requiredSkills
+        .map((skill) => String(skill).trim())
+        .filter(Boolean)
+    : [];
+
+  const course = insertOne('courses', {
+    title: title.trim(),
+    description: description?.trim() || '',
+    subject: subject.trim(),
+    category: category.trim(),
+    duration: duration?.trim() || 'N/A',
+    level,
+    trainerId,
+    trainerName,
+    requiredSkills: normalizedSkills,
+    thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400',
+    tags: normalizedSkills.map((skill) => skill.toLowerCase()),
+    enrollmentCount: 0,
+    maxEnrollment: 50,
+    status: 'Active',
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: 'Course created successfully.',
+    course: enrichCourse(course),
+  });
+});
+
+/* ─────────────────────────────────────────────
    GET /api/courses/:id
 ───────────────────────────────────────────── */
 router.get('/:id', (req, res) => {
@@ -63,6 +119,30 @@ router.get('/:id', (req, res) => {
   }
 
   return res.status(200).json({ success: true, course: enrichCourse(course) });
+});
+
+/* ─────────────────────────────────────────────
+   DELETE /api/courses/:id
+───────────────────────────────────────────── */
+router.delete('/:id', (req, res) => {
+  const course = findById('courses', req.params.id);
+  if (!course) {
+    return res.status(404).json({ success: false, message: 'Course not found.' });
+  }
+
+  const assessmentIds = findAll('assessments', (a) => a.courseId === course._id).map((a) => a._id);
+  assessmentIds.forEach((assessmentId) => deleteById('assessments', assessmentId));
+
+  const libraryIds = findAll('library', (item) => item.courseId === course._id).map((item) => item._id);
+  libraryIds.forEach((libraryId) => deleteById('library', libraryId));
+
+  deleteById('courses', course._id);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Course deleted successfully.',
+    deletedCourseId: course._id,
+  });
 });
 
 module.exports = router;

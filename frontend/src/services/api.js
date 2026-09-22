@@ -78,6 +78,17 @@ export const api = {
 
   getCourseById: (courseId) => request(`/courses/${courseId}`),
 
+  createCourse: (courseData) =>
+    request('/courses', {
+      method: 'POST',
+      body: JSON.stringify(courseData),
+    }),
+
+  deleteCourse: (courseId) =>
+    request(`/courses/${courseId}`, {
+      method: 'DELETE',
+    }),
+
   // Assessments
   getAssessments: (courseId) => {
     const query = courseId ? `?courseId=${courseId}` : '';

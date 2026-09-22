@@ -150,7 +150,7 @@ const useAdminData = () => {
   };
 
   return {
-    users, courses, announcements, setAnnouncements, selectedCourseId, setSelectedCourseId,
+    users, courses, setCourses, announcements, setAnnouncements, selectedCourseId, setSelectedCourseId,
     matchingResults, matchingLoading, loading, actionLoading, handleStatusChange, addToast,
   };
 };
@@ -423,7 +423,237 @@ const UserApprovalsView = ({ users, actionLoading, handleStatusChange, searchQue
   );
 };
 
-/* ── 3. Competency Mapping ────────────────────────────────────── */
+/* ── 3. Course Management ─────────────────────────────────────── */
+const COURSE_SKILL_OPTIONS = [
+  'Leadership', 'Communication', 'Team Building', 'Conflict Resolution',
+  'Cloud Computing', 'Agile', 'Scrum', 'DevOps', 'Python', 'HR Practices',
+  'Compliance', 'Project Management', 'Presentation', 'Coaching', 'Product Ownership',
+  'Data Analysis', 'System Design', 'Quality Assurance', 'People Management',
+];
+
+const CourseManagementView = ({ courses, selectedCourseId, setSelectedCourseId, onCreateCourse, onDeleteCourse }) => {
+  const [form, setForm] = useState({
+    title: '',
+    subject: '',
+    category: '',
+    description: '',
+    duration: '',
+    level: 'Beginner',
+  });
+  const [requiredSkills, setRequiredSkills] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSkillToggle = (skill) => {
+    setRequiredSkills((prev) =>
+      prev.includes(skill)
+        ? prev.filter((item) => item !== skill)
+        : [...prev, skill]
+    );
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!form.title.trim() || !form.subject.trim() || !form.category.trim()) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await onCreateCourse({
+        ...form,
+        title: form.title.trim(),
+        subject: form.subject.trim(),
+        category: form.category.trim(),
+        description: form.description.trim(),
+        duration: form.duration.trim(),
+        requiredSkills,
+      });
+
+      setForm({
+        title: '',
+        subject: '',
+        category: '',
+        description: '',
+        duration: '',
+        level: 'Beginner',
+      });
+      setRequiredSkills([]);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-extrabold text-[#19191F]">Course Management</h2>
+        <p className="text-sm text-[#92929E] mt-1">Create new learning tracks and define the skills they require.</p>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-[#EEEEF4] shadow-sm p-6 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#92929E] mb-1.5">Course Title</label>
+              <input
+                value={form.title}
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                placeholder="e.g. Advanced Data Analytics"
+                className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-sm outline-none focus:border-[#755BE8]"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#92929E] mb-1.5">Subject</label>
+              <input
+                value={form.subject}
+                onChange={(event) => setForm((prev) => ({ ...prev, subject: event.target.value }))}
+                placeholder="e.g. Data"
+                className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-sm outline-none focus:border-[#755BE8]"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#92929E] mb-1.5">Category</label>
+              <input
+                value={form.category}
+                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                placeholder="e.g. Technology"
+                className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-sm outline-none focus:border-[#755BE8]"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#92929E] mb-1.5">Duration</label>
+              <input
+                value={form.duration}
+                onChange={(event) => setForm((prev) => ({ ...prev, duration: event.target.value }))}
+                placeholder="e.g. 12 hours"
+                className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-sm outline-none focus:border-[#755BE8]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#92929E] mb-1.5">Level</label>
+              <select
+                value={form.level}
+                onChange={(event) => setForm((prev) => ({ ...prev, level: event.target.value }))}
+                className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-sm outline-none focus:border-[#755BE8]"
+              >
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#92929E] mb-1.5">Course Description</label>
+              <textarea
+                value={form.description}
+                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+                rows={4}
+                placeholder="Describe what learners will gain from this course"
+                className="w-full rounded-xl border border-[#EEEEF4] bg-[#F6F7FB] px-3 py-2.5 text-sm outline-none focus:border-[#755BE8]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#92929E] mb-2">Required Skills</label>
+            <div className="flex flex-wrap gap-2">
+              {COURSE_SKILL_OPTIONS.map((skill) => {
+                const active = requiredSkills.includes(skill);
+                return (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => handleSkillToggle(skill)}
+                    className={`px-2.5 py-1.5 rounded-full text-[11px] font-semibold border transition-all ${
+                      active
+                        ? 'bg-[#EEE9FB] text-[#755BE8] border-[#755BE8]/20'
+                        : 'bg-[#F6F7FB] text-[#92929E] border-[#EEEEF4] hover:border-[#755BE8]/20 hover:text-[#755BE8]'
+                    }`}
+                  >
+                    {skill}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#EEEEF4]">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-4 py-2.5 rounded-xl bg-[#755BE8] text-white text-xs font-bold hover:bg-[#6448DE] disabled:opacity-60"
+            >
+              {submitting ? 'Creating...' : 'Create Course'}
+            </button>
+          </div>
+        </form>
+
+        <div className="bg-white rounded-3xl border border-[#EEEEF4] shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-[#19191F]">Existing Courses</h3>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#92929E]">{courses.length} total</span>
+          </div>
+
+          <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+            {courses.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#EEEEF4] bg-[#F6F7FB] py-10 text-center text-xs text-[#92929E]">
+                No courses yet.
+              </div>
+            ) : (
+              courses.map((course) => (
+                <div key={course._id} className="rounded-2xl border border-[#EEEEF4] bg-[#F6F7FB] p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCourseId(course._id)}
+                          className="text-left text-xs font-bold text-[#19191F] hover:text-[#755BE8]"
+                        >
+                          {course.title}
+                        </button>
+                        {selectedCourseId === course._id && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#EEE9FB] text-[#755BE8] text-[9px] font-bold">Selected</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[#92929E] mt-1">{course.subject} · {course.category}</p>
+                      {course.requiredSkills?.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {course.requiredSkills.slice(0, 3).map((skill) => (
+                            <span key={skill} className="text-[9px] px-1.5 py-0.5 rounded-full bg-white text-[#755BE8] border border-[#EEEEF4]">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteCourse(course._id)}
+                      className="p-2 rounded-lg text-[#92929E] hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                      title="Delete course"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── 4. Competency Mapping ────────────────────────────────────── */
 const CompetencyView = ({ courses, selectedCourseId, setSelectedCourseId, matchingResults, matchingLoading, addToast }) => (
   <div className="space-y-6">
     <div>
@@ -650,12 +880,38 @@ const AnnouncementsView = ({ announcements, onCreate, onDelete }) => (
 export const AdminDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) => {
   const { user } = useAuth();
   const {
-    users, courses, announcements, setAnnouncements,
+    users, courses, setCourses, announcements, setAnnouncements,
     selectedCourseId, setSelectedCourseId,
     matchingResults, matchingLoading,
     actionLoading, handleStatusChange, addToast,
   } = useAdminData();
   const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
+
+  const handleCreateCourse = async (payload) => {
+    try {
+      const response = await api.createCourse(payload);
+      const newCourse = response.course;
+      setCourses((previous) => [newCourse, ...previous]);
+      setSelectedCourseId(newCourse._id);
+      addToast('Course created successfully and added to competency mapping.', 'success');
+    } catch (error) {
+      addToast(error.message || 'Failed to create course.', 'error');
+    }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    try {
+      await api.deleteCourse(courseId);
+      setCourses((previous) => previous.filter((course) => course._id !== courseId));
+      if (selectedCourseId === courseId) {
+        const nextCourse = courses.find((course) => course._id !== courseId);
+        setSelectedCourseId(nextCourse?._id || '');
+      }
+      addToast('Course deleted successfully.', 'info');
+    } catch (error) {
+      addToast(error.message || 'Failed to delete course.', 'error');
+    }
+  };
 
   const handleAnnouncementCreated = (announcement) => {
     setAnnouncements((previous) => [announcement, ...previous]);
@@ -679,6 +935,16 @@ export const AdminDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) =>
     switch (activeTab) {
       case 'approvals':
         return <UserApprovalsView users={users} actionLoading={actionLoading} handleStatusChange={handleStatusChange} searchQuery={searchQuery} />;
+      case 'courses-management':
+        return (
+          <CourseManagementView
+            courses={courses}
+            selectedCourseId={selectedCourseId}
+            setSelectedCourseId={setSelectedCourseId}
+            onCreateCourse={handleCreateCourse}
+            onDeleteCourse={handleDeleteCourse}
+          />
+        );
       case 'competency':
         return (
           <CompetencyView

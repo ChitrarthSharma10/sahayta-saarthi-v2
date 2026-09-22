@@ -31,11 +31,12 @@ const NAV_CONFIG = {
     { id: 'profile-management',  label: 'Profile Management',       icon: Users           },
   ],
   Admin: [
-    { id: 'dashboard',   label: 'Dashboard',              icon: LayoutDashboard },
-    { id: 'approvals',   label: 'User Approvals',          icon: Users           },
-    { id: 'competency',  label: 'Competency Mapping',      icon: GitMerge        },
-    { id: 'announcements', label: 'Announcements',         icon: Megaphone       },
-    { id: 'feedback',      label: 'Feedback Inbox',         icon: MessageSquare   },
+    { id: 'dashboard',         label: 'Dashboard',          icon: LayoutDashboard },
+    { id: 'approvals',         label: 'User Approvals',     icon: Users           },
+    { id: 'courses-management', label: 'Course Management', icon: BookOpen        },
+    { id: 'competency',        label: 'Competency Mapping', icon: GitMerge        },
+    { id: 'announcements',     label: 'Announcements',      icon: Megaphone       },
+    { id: 'feedback',          label: 'Feedback Inbox',     icon: MessageSquare   },
   ],
 };
 
