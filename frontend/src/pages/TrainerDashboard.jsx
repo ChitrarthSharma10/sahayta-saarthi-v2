@@ -468,7 +468,7 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
     const fetchData = async () => {
       try {
         const [coursesRes, libraryRes, assessmentsRes] = await Promise.all([
-          api.getCourses(),
+          api.getCourses({ trainerId: user?._id }),
           api.getLibrary(),
           api.getAssessments(),
         ]);
@@ -482,7 +482,7 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
       }
     };
     fetchData();
-  }, []);
+  }, [user?._id]);
 
   useEffect(() => {
     if (!selectedCourse) {

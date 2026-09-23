@@ -13,6 +13,61 @@
   }
 }
 
+@keyframes loginCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loginContentIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loginOrbitFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(10px, 8px, 0) rotate(6deg);
+  }
+}
+
+.login-card {
+  animation: loginCardIn 650ms ease-out both;
+}
+
+.login-form-content {
+  animation: loginContentIn 550ms 180ms ease-out both;
+}
+
+.login-orbit {
+  animation: loginOrbitFloat 9s ease-in-out infinite;
+}
+
+.login-orbit-bottom {
+  animation-delay: -4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card,
+  .login-form-content,
+  .login-orbit {
+    animation: none;
+  }
+}
+
 /* Custom modern scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

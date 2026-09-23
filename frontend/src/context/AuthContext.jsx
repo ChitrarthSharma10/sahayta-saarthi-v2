@@ -3,49 +3,14 @@ import { api } from '../services/api';
 
 const AuthContext = createContext(null);
 
-export const DEMO_ACCOUNTS = {
-  Trainee: {
-    name: 'Jason Ranti',
-    email: 'jason.ranti@coursue.com',
-    password: 'trainee@123',
-    role: 'Trainee',
-    title: 'Product Designer',
-  },
-  Trainer: {
-    name: 'Priya Nair',
-    email: 'priya.nair@capacityconnect.in',
-    password: 'trainer@123',
-    role: 'Trainer',
-    title: 'Senior Learning Specialist',
-  },
-  Admin: {
-    name: 'Arjun Mehta',
-    email: 'admin@capacityconnect.in',
-    password: 'admin@123',
-    role: 'Admin',
-    title: 'Platform Administrator',
-  },
-};
-
-const DEFAULT_USER = {
-  _id: 'user-jason',
-  name: 'Jason Ranti',
-  email: 'jason.ranti@coursue.com',
-  role: 'Trainee',
-  status: 'Approved',
-  profile: {
-    designation: 'Product Designer',
-    department: 'Design',
-  },
-};
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('capacity_connect_user');
-      return saved ? JSON.parse(saved) : DEFAULT_USER;
+      const token = localStorage.getItem('capacity_connect_token');
+      return saved && token ? JSON.parse(saved) : null;
     } catch {
-      return DEFAULT_USER;
+      return null;
     }
   });
   const [loading, setLoading] = useState(false);
@@ -88,6 +53,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.login(email, password);
       if (res?.success && res.user) {
+        if (res.token) localStorage.setItem('capacity_connect_token', res.token);
         setUser(res.user);
         return { success: true, user: res.user };
       }
@@ -116,48 +82,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const switchDemoRole = async (targetRole) => {
-    const creds = DEMO_ACCOUNTS[targetRole];
-    if (!creds) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.login(creds.email, creds.password);
-      if (res?.success && res.user) {
-        setUser(res.user);
-        return { success: true, user: res.user };
-      }
-      throw new Error(res?.message || 'Failed to switch demo role');
-    } catch (err) {
-      if (err.status) {
-        const msg = err.message || 'Unable to switch demo role';
-        setError(msg);
-        return { success: false, message: msg };
-      }
-      console.warn('Backend login switch failed, using local demo profile:', err.message);
-      // Fallback local mock user so UI remains fully testable even if offline
-      const mockUser = {
-        _id: `demo-${targetRole.toLowerCase()}`,
-        name: creds.name,
-        email: creds.email,
-        role: targetRole,
-        status: 'Approved',
-        profile: {
-          designation: creds.title,
-          department: targetRole === 'Admin' ? 'IT' : targetRole === 'Trainer' ? 'Human Resources' : 'Operations',
-        },
-      };
-      setUser(mockUser);
-      return { success: true, user: mockUser };
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const logout = () => {
     setUser(null);
     localStorage.removeItem('capacity_connect_user');
+    localStorage.removeItem('capacity_connect_token');
   };
 
   const updateUser = (updatedUser) => setUser(updatedUser);
@@ -174,7 +102,6 @@ export const AuthProvider = ({ children }) => {
         register,
         updateUser,
         logout,
-        switchDemoRole,
       }}
     >
       {children}

@@ -8,8 +8,10 @@
 
 const express = require('express');
 const { findAll, findById, findOne, insertOne, deleteById } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
+router.use(requireAuth);
 
 /* ─────────────────────────────────────────────
    Helper: enrich a course document with live
@@ -43,11 +45,12 @@ function enrichCourse(course) {
 ───────────────────────────────────────────── */
 router.get('/', (req, res) => {
   const { category, level, trainerId } = req.query;
+  const requestedTrainerId = req.user.role === 'Trainer' ? req.user.userId : trainerId;
 
   const courses = findAll('courses', (c) => {
     const matchCat      = category   ? c.category  === category   : true;
     const matchLevel    = level      ? c.level      === level      : true;
-    const matchTrainer  = trainerId  ? c.trainerId  === trainerId  : true;
+    const matchTrainer  = requestedTrainerId ? c.trainerId === requestedTrainerId : true;
     return matchCat && matchLevel && matchTrainer;
   });
 

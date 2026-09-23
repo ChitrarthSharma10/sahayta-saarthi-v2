@@ -1,7 +1,9 @@
 const express = require('express');
 const { findAll } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
+router.use(requireAuth);
 
 const getWeekLabels = () => {
   const labels = [];
@@ -19,6 +21,9 @@ const getWeekIndex = (date) => {
 };
 
 router.get('/trainee/:userId', (req, res) => {
+  if (req.user.role !== 'Admin' && req.params.userId !== req.user.userId) {
+    return res.status(403).json({ success: false, message: 'You can only view your own analytics.' });
+  }
   const submissions = findAll(
     'assessmentSubmissions',
     (submission) => submission.userId === req.params.userId
@@ -54,6 +59,9 @@ router.get('/trainee/:userId', (req, res) => {
 });
 
 router.get('/trainer/:trainerId', (req, res) => {
+  if (req.user.role !== 'Admin' && req.params.trainerId !== req.user.userId) {
+    return res.status(403).json({ success: false, message: 'You can only view your own analytics.' });
+  }
   const courses = findAll('courses', (course) => course.trainerId === req.params.trainerId);
   const courseIds = new Set(courses.map((course) => course._id));
   const submissions = findAll('assessmentSubmissions', (submission) => courseIds.has(submission.courseId));

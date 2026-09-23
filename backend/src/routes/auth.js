@@ -7,6 +7,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { findOne, insertOne } = require('../db');
+const { createToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -49,7 +50,12 @@ router.post('/login', (req, res) => {
   // Strip password before sending
   const { password: _pw, ...safeUser } = user;
 
-  return res.status(200).json({ success: true, message: 'Login successful.', user: safeUser });
+  return res.status(200).json({
+    success: true,
+    message: 'Login successful.',
+    token: createToken(user),
+    user: safeUser,
+  });
 });
 
 /* ─────────────────────────────────────────────
@@ -59,7 +65,7 @@ router.post('/login', (req, res) => {
    New users are created with status "Pending"
 ───────────────────────────────────────────── */
 router.post('/register', (req, res) => {
-  const { name, email, password, role, profile = {} } = req.body;
+  const { name, email, password, role, profile = {}, skills = [], competencies = [], qualifications = [] } = req.body;
 
   // Validation
   if (!name || !email || !password || !role) {
@@ -69,6 +75,28 @@ router.post('/register', (req, res) => {
   if (!['Trainee', 'Trainer'].includes(role)) {
     return res.status(400).json({ success: false, message: 'Role must be "Trainee" or "Trainer".' });
   }
+
+  const cleanQualifications = Array.isArray(qualifications)
+    ? qualifications
+      .filter((item) => item && item.title && item.issuer && item.url)
+      .map((item) => ({
+        title: String(item.title).trim(),
+        issuer: String(item.issuer).trim(),
+        type: String(item.type || 'Certificate').trim(),
+        url: String(item.url).trim(),
+      }))
+    : [];
+
+  if (role === 'Trainer' && cleanQualifications.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Trainer registration requires at least one certificate or qualification document.',
+    });
+  }
+
+  const cleanList = (items) => Array.isArray(items)
+    ? items.map((item) => String(item).trim()).filter(Boolean)
+    : [];
 
   const existing = findOne('users', (u) => u.email.toLowerCase() === email.toLowerCase());
   if (existing) {
@@ -89,7 +117,11 @@ router.post('/register', (req, res) => {
       ...(role === 'Trainee' && { enrolledCourses: [] }),
       ...(role === 'Trainer' && { bio: profile.bio || '', experience: profile.experience || 0 }),
     },
-    ...(role === 'Trainer' && { skills: [], competencies: [] }),
+    ...(role === 'Trainer' && {
+      skills: cleanList(skills),
+      competencies: cleanList(competencies),
+      qualifications: cleanQualifications,
+    }),
   });
 
   const { password: _pw, ...safeUser } = newUser;

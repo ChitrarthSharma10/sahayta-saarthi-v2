@@ -1,10 +1,15 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { findAll, findOne, insertOne, updateById } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
+router.use(requireAuth);
 
 router.get('/:userId', (req, res) => {
+  if (req.user.role !== 'Admin' && req.params.userId !== req.user.userId) {
+    return res.status(403).json({ success: false, message: 'You can only view your own enrollments.' });
+  }
   const enrollments = findAll(
     'enrollments',
     (enrollment) => enrollment.userId === req.params.userId && enrollment.status === 'Active'
@@ -16,6 +21,9 @@ router.post('/', (req, res) => {
   const { userId, courseId } = req.body;
   if (!userId || !courseId) {
     return res.status(400).json({ success: false, message: 'userId and courseId are required.' });
+  }
+  if (req.user.role !== 'Admin' && userId !== req.user.userId) {
+    return res.status(403).json({ success: false, message: 'You can only manage your own enrollments.' });
   }
 
   const existing = findOne('enrollments', (enrollment) =>
@@ -41,6 +49,9 @@ router.post('/', (req, res) => {
 });
 
 router.delete('/:userId/:courseId', (req, res) => {
+  if (req.user.role !== 'Admin' && req.params.userId !== req.user.userId) {
+    return res.status(403).json({ success: false, message: 'You can only manage your own enrollments.' });
+  }
   const enrollment = findOne('enrollments', (item) =>
     item.userId === req.params.userId && item.courseId === req.params.courseId && item.status === 'Active'
   );

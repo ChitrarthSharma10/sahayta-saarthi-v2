@@ -331,6 +331,7 @@ const UserApprovalsView = ({ users, actionLoading, handleStatusChange, searchQue
                 <th className="py-3.5 px-6">User / Identity</th>
                 <th className="py-3.5 px-4">Role</th>
                 <th className="py-3.5 px-4">Department & Title</th>
+                <th className="py-3.5 px-4">Qualifications</th>
                 <th className="py-3.5 px-4">Status</th>
                 <th className="py-3.5 px-6 text-right">Actions</th>
               </tr>
@@ -338,7 +339,7 @@ const UserApprovalsView = ({ users, actionLoading, handleStatusChange, searchQue
             <tbody className="divide-y divide-[#EEEEF4]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-14 text-center text-[#92929E] text-xs">
+                  <td colSpan={6} className="py-14 text-center text-[#92929E] text-xs">
                     No users found matching current filters.
                   </td>
                 </tr>
@@ -374,6 +375,17 @@ const UserApprovalsView = ({ users, actionLoading, handleStatusChange, searchQue
                       <td className="py-4 px-4">
                         <div className="font-semibold text-[#19191F]">{u.profile?.designation || 'Not specified'}</div>
                         <div className="text-[11px] text-[#92929E]">{u.profile?.department || 'Operations'}</div>
+                      </td>
+                      <td className="py-4 px-4">
+                        {isTrainer && u.qualifications?.length ? (
+                          <div className="max-w-[180px] space-y-1">
+                            {u.qualifications.map((qualification, index) => (
+                              <a key={`${u._id}-${index}`} href={qualification.url} target="_blank" rel="noreferrer" className="block truncate text-[10px] font-semibold text-[#755BE8] hover:underline" title={`${qualification.title} · ${qualification.issuer}`}>
+                                {qualification.title} · {qualification.issuer}
+                              </a>
+                            ))}
+                          </div>
+                        ) : <span className="text-[11px] text-[#92929E]">{isTrainer ? 'Not submitted' : 'Not applicable'}</span>}
                       </td>
                       <td className="py-4 px-4">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${

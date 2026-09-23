@@ -9,6 +9,9 @@ async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
+    ...(localStorage.getItem('capacity_connect_token')
+      ? { Authorization: `Bearer ${localStorage.getItem('capacity_connect_token')}` }
+      : {}),
     ...(options.headers || {}),
   };
 
