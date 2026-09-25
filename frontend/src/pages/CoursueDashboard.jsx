@@ -13,7 +13,6 @@ import { api } from '../services/api';
 import { FeedbackPanel } from '../components/common/FeedbackPanel';
 import { useAuth } from '../context/AuthContext';
 import { StreaksCalendar } from '../components/trainee/StreaksCalendar';
-import { MCQProgressChart } from '../components/trainee/MCQProgressChart';
 import { TraineeSettingsView } from '../components/trainee/TraineeSettingsView';
 import {
   X, Play, BookOpen, Clock, Users,
@@ -610,7 +609,6 @@ export const CoursueDashboard = () => {
           <>
             <HeroBanner onJoinClick={handleJoinClick} />
             <CourseProgressCard onActionClick={handleProgressAction} />
-            <MCQProgressChart />
             <ContinueWatchingCarousel
               courses={courses.filter((course) => enrolledCourseIds.has(course._id))}
               searchQuery={searchQuery}

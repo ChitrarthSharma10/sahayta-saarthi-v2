@@ -4,7 +4,6 @@ import { MENTORS_LIST } from '../../data/coursueData';
 import { useToast } from '../common/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { PerformanceLineChart } from './PerformanceLineChart';
 
 const EMPTY_CHARTS = {
   trainee: {
@@ -103,9 +102,7 @@ export const StatisticsPanel = ({
           </button>
         </div>
 
-        {variant === 'trainee' ? (
-          <PerformanceLineChart />
-        ) : (
+        {variant === 'trainer' && (
           <div className="bg-[#EEE9FB] rounded-2xl p-3.5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex flex-wrap gap-x-3 gap-y-1">
