@@ -468,8 +468,12 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const courseFilters = {};
+        if (user?._id) courseFilters.trainerId = user._id;
+        if (user?.name) courseFilters.trainerName = user.name;
+
         const [coursesRes, libraryRes, assessmentsRes] = await Promise.all([
-          api.getCourses({ trainerId: user?._id }),
+          api.getCourses(courseFilters),
           api.getLibrary(),
           api.getAssessments(),
         ]);
@@ -483,7 +487,7 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
       }
     };
     fetchData();
-  }, [user?._id]);
+  }, [user?._id, user?.name]);
 
   useEffect(() => {
     if (!selectedCourse) {

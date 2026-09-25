@@ -7,7 +7,7 @@
  */
 
 const express = require('express');
-const { findAll, findById, findOne, insertOne, deleteById } = require('../db');
+const { findAll, findById, findOne, insertOne, deleteById, updateById } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -18,7 +18,9 @@ router.use(requireAuth);
    trainer profile info
 ───────────────────────────────────────────── */
 function enrichCourse(course) {
-  const trainer = findOne('users', (u) => u._id === course.trainerId);
+  const trainer = findOne('users', (u) => u._id === course.trainerId)
+    || findOne('users', (u) => u.name === course.trainerName);
+
   return {
     ...course,
     requiredSkills: Array.isArray(course.requiredSkills) ? course.requiredSkills : [],
@@ -44,13 +46,17 @@ function enrichCourse(course) {
      ?trainerId=  (optional)
 ───────────────────────────────────────────── */
 router.get('/', (req, res) => {
-  const { category, level, trainerId } = req.query;
-  const requestedTrainerId = req.user.role === 'Trainer' ? req.user.userId : trainerId;
+  const { category, level, trainerId, trainerName } = req.query;
+  const requestedTrainerId = trainerId || (req.user.role === 'Trainer' ? req.user.userId : undefined);
+  const requestedTrainerName = trainerName || (req.user.role === 'Trainer' ? req.user.name : undefined);
 
   const courses = findAll('courses', (c) => {
-    const matchCat      = category   ? c.category  === category   : true;
-    const matchLevel    = level      ? c.level      === level      : true;
-    const matchTrainer  = requestedTrainerId ? c.trainerId === requestedTrainerId : true;
+    const matchCat = category ? c.category === category : true;
+    const matchLevel = level ? c.level === level : true;
+    const matchTrainer = requestedTrainerId || requestedTrainerName
+      ? ((requestedTrainerId && c.trainerId === requestedTrainerId)
+        || (requestedTrainerName && c.trainerName === requestedTrainerName))
+      : true;
     return matchCat && matchLevel && matchTrainer;
   });
 
@@ -122,6 +128,35 @@ router.get('/:id', (req, res) => {
   }
 
   return res.status(200).json({ success: true, course: enrichCourse(course) });
+});
+
+/* ─────────────────────────────────────────────
+   PATCH /api/courses/:id/trainer
+───────────────────────────────────────────── */
+router.patch('/:id/trainer', (req, res) => {
+  const course = findById('courses', req.params.id);
+  if (!course) {
+    return res.status(404).json({ success: false, message: 'Course not found.' });
+  }
+
+  const { trainerId = null, trainerName = 'Unassigned' } = req.body || {};
+  if (!trainerId && !trainerName) {
+    return res.status(400).json({
+      success: false,
+      message: 'A trainer id or trainer name is required.',
+    });
+  }
+
+  const updatedCourse = updateById('courses', course._id, {
+    trainerId,
+    trainerName,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: `${trainerName} assigned as the lead trainer for this course.`,
+    course: enrichCourse(updatedCourse),
+  });
 });
 
 /* ─────────────────────────────────────────────

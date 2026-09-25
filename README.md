@@ -169,8 +169,6 @@ The app includes seeded mock users for quick testing.
 - Email: ananya.sharma@example.com
 - Password: trainee@123
 
-You can also use the demo role switcher in the UI for quick portal access testing.
-
 ## Backend API Notes
 
 The backend exposes a mock REST API for core LMS workflows, including:

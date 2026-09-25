@@ -3,31 +3,21 @@ import {
   Search,
   Bell,
   MessageCircle,
-  ChevronDown,
-  UserCheck,
-  Shield,
-  GraduationCap,
-  Check,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../common/Toast';
 import { api } from '../../services/api';
 
 export const TopBar = ({ searchQuery, setSearchQuery }) => {
-  const { user, role, switchDemoRole } = useAuth();
+  const { user, role } = useAuth();
   const { addToast } = useToast();
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
-  const dropdownRef = useRef(null);
   const notifRef = useRef(null);
 
   /* ── Close dropdowns on outside click ──────────────────────── */
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setRoleDropdownOpen(false);
-      }
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setNotifDropdownOpen(false);
       }
@@ -52,20 +42,6 @@ export const TopBar = ({ searchQuery, setSearchQuery }) => {
       window.removeEventListener('capacity-connect-announcements-updated', fetchAnnouncements);
     };
   }, []);
-
-  const handleRoleSelect = async (targetRole) => {
-    if (targetRole === role) { setRoleDropdownOpen(false); return; }
-    setRoleDropdownOpen(false);
-    addToast(`Switching to ${targetRole} view…`, 'info');
-    await switchDemoRole(targetRole);
-    addToast(`Switched to ${targetRole} role!`, 'success');
-  };
-
-  const ROLES = [
-    { roleName: 'Trainee',  desc: 'Take quizzes, track progress',   icon: GraduationCap, dot: 'bg-amber-400'   },
-    { roleName: 'Trainer',  desc: 'Build MCQs, upload materials',   icon: UserCheck,     dot: 'bg-violet-500'  },
-    { roleName: 'Admin',    desc: 'Approve trainees, map competency', icon: Shield,       dot: 'bg-emerald-500' },
-  ];
 
   return (
     <header className="h-[68px] bg-slate-950/45 border-b border-white/10 px-6 flex items-center gap-4 sticky top-0 z-20 backdrop-blur-xl">
@@ -125,66 +101,6 @@ export const TopBar = ({ searchQuery, setSearchQuery }) => {
                     </div>
                   ))
                 )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Subtle vertical divider */}
-        <div className="h-7 w-px bg-white/10 mx-1" />
-
-        {/* Demo Role Switcher dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setRoleDropdownOpen((p) => !p)}
-            className="flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-full bg-[#73bfc4]/12 border border-[#73bfc4]/20 text-[#73bfc4] text-xs font-bold hover:bg-[#73bfc4]/18 transition-colors"
-          >
-            <span className="text-[11px]">{role}</span>
-            <ChevronDown
-              className={`w-3.5 h-3.5 transition-transform duration-200 ${roleDropdownOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {roleDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#EEEEF4] shadow-xl py-2 z-50">
-              <div className="px-4 py-2 border-b border-[#EEEEF4]">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#19191F]">Switch Role Preview</p>
-                <p className="text-[10px] text-[#92929E] mt-0.5">Toggle without logging out</p>
-              </div>
-              <div className="p-1.5 space-y-0.5">
-                {ROLES.map((item) => {
-                  const isSelected = role === item.roleName;
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.roleName}
-                      onClick={() => handleRoleSelect(item.roleName)}
-                      className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all ${
-                        isSelected
-                          ? 'bg-[#EEE9FB] text-[#755BE8]'
-                          : 'text-[#92929E] hover:bg-[#F6F7FB] hover:text-[#19191F]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-[#755BE8]/10' : 'bg-[#F6F7FB]'}`}>
-                          <Icon className={`w-4 h-4 ${isSelected ? 'text-[#755BE8]' : 'text-[#92929E]'}`} />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold flex items-center gap-1.5">
-                            {item.roleName}
-                            {isSelected && (
-                              <span className="text-[9px] px-1.5 rounded bg-[#755BE8]/10 text-[#755BE8] font-bold">
-                                ACTIVE
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-[#92929E]">{item.desc}</div>
-                        </div>
-                      </div>
-                      {isSelected && <Check className="w-4 h-4 text-[#755BE8] shrink-0" />}
-                    </button>
-                  );
-                })}
               </div>
             </div>
           )}

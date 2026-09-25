@@ -14,6 +14,7 @@ const sign = (value) => crypto
 const createToken = (user) => {
   const payload = encode({
     userId: user._id,
+    name: user.name,
     role: user.role,
     exp: Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS,
   });

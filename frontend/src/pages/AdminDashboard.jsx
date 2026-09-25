@@ -667,7 +667,7 @@ const CourseManagementView = ({ courses, selectedCourseId, setSelectedCourseId, 
 };
 
 /* ── 4. Competency Mapping ────────────────────────────────────── */
-const CompetencyView = ({ courses, selectedCourseId, setSelectedCourseId, matchingResults, matchingLoading, addToast }) => (
+const CompetencyView = ({ courses, selectedCourseId, setSelectedCourseId, matchingResults, matchingLoading, addToast, onTrainerAssigned }) => (
   <div className="space-y-6">
     <div>
       <h2 className="text-xl font-extrabold text-[#19191F]">Competency Mapping Engine</h2>
@@ -770,7 +770,7 @@ const CompetencyView = ({ courses, selectedCourseId, setSelectedCourseId, matchi
                   <span className="text-[11px] text-[#92929E]">Rank #{rankIdx + 1} Best Fit</span>
                   <button
                     type="button"
-                    onClick={() => addToast(`Assigned ${trainer.name} as lead instructor!`, 'success')}
+                    onClick={() => onTrainerAssigned?.(selectedCourseId, trainer)}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#EEE9FB] hover:bg-[#755BE8] text-[#755BE8] hover:text-white text-xs font-bold border border-[#755BE8]/20 hover:border-[#755BE8] transition-all"
                   >
                     <UserCheck className="w-3.5 h-3.5" /> Assign Trainer
@@ -944,6 +944,28 @@ export const AdminDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) =>
     }
   };
 
+  const handleTrainerAssignment = async (courseId, trainer) => {
+    if (!courseId || !trainer) return;
+
+    try {
+      const payload = {
+        trainerId: trainer._id || null,
+        trainerName: trainer.name || 'Unassigned',
+      };
+
+      const response = await api.assignCourseTrainer(courseId, payload);
+      const updatedCourse = response?.course || null;
+
+      if (updatedCourse) {
+        setCourses((previous) => previous.map((course) => (course._id === courseId ? updatedCourse : course)));
+      }
+
+      addToast(`Assigned ${payload.trainerName} as lead instructor!`, 'success');
+    } catch (error) {
+      addToast(error.message || 'Failed to assign trainer.', 'error');
+    }
+  };
+
   const renderView = () => {
     switch (activeTab) {
       case 'approvals':
@@ -967,6 +989,7 @@ export const AdminDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) =>
             matchingResults={matchingResults}
             matchingLoading={matchingLoading}
             addToast={addToast}
+            onTrainerAssigned={handleTrainerAssignment}
           />
         );
       case 'announcements':

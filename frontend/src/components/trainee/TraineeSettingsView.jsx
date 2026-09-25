@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../common/Toast';
 
 export const TraineeSettingsView = () => {
-  const { user, updateUser, switchDemoRole } = useAuth();
+  const { user, updateUser } = useAuth();
   const { addToast } = useToast();
 
   const [name, setName] = useState(user?.name || '');
@@ -17,7 +17,6 @@ export const TraineeSettingsView = () => {
     streakReminders: true,
   });
   const [saving, setSaving] = useState(false);
-  const [switchingRole, setSwitchingRole] = useState(false);
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -43,19 +42,6 @@ export const TraineeSettingsView = () => {
       addToast('Failed to update profile.', 'error');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleRoleSwitch = async (targetRole) => {
-    if (switchingRole || targetRole === user?.role) return;
-    setSwitchingRole(true);
-    try {
-      await switchDemoRole(targetRole);
-      addToast(`Switched to ${targetRole} role.`, 'success');
-    } catch {
-      addToast('Could not switch role.', 'error');
-    } finally {
-      setSwitchingRole(false);
     }
   };
 
@@ -194,41 +180,6 @@ export const TraineeSettingsView = () => {
           </div>
         </section>
 
-        {/* Demo Role Switcher */}
-        <section className="rounded-3xl border border-[#EEEEF4] bg-white p-6 shadow-card space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#EEE9FB] flex items-center justify-center text-[#755BE8]">
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-[#19191F]">Role & Simulation</h3>
-              <p className="text-xs text-[#92929E]">Current authenticated role: <span className="font-bold text-[#755BE8]">{user?.role || 'Trainee'}</span></p>
-            </div>
-          </div>
-
-          <p className="text-xs text-[#92929E]">
-            Test other perspectives in the Capacity Connect ecosystem by switching your session role:
-          </p>
-
-          <div className="flex flex-wrap gap-3 pt-1">
-            {['Trainee', 'Trainer', 'Admin'].map((roleOption) => (
-              <button
-                key={roleOption}
-                type="button"
-                disabled={switchingRole || user?.role === roleOption}
-                onClick={() => handleRoleSwitch(roleOption)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  user?.role === roleOption
-                    ? 'bg-[#EEE9FB] text-[#755BE8] cursor-default'
-                    : 'bg-[#F6F7FB] text-[#92929E] hover:text-[#19191F] hover:bg-[#EEEEF4] cursor-pointer'
-                }`}
-              >
-                {user?.role === roleOption && <CheckCircle2 className="w-3.5 h-3.5 text-[#755BE8]" />}
-                <span>{roleOption}</span>
-              </button>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   );

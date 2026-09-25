@@ -7,8 +7,13 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('capacity_connect_user');
-      const token = localStorage.getItem('capacity_connect_token');
-      return saved && token ? JSON.parse(saved) : null;
+      if (!saved) return null;
+
+      const parsed = JSON.parse(saved);
+      const hasToken = !!localStorage.getItem('capacity_connect_token');
+      const isDemoUser = parsed?._id?.startsWith('demo-');
+
+      return parsed && (hasToken || isDemoUser) ? parsed : null;
     } catch {
       return null;
     }
@@ -88,7 +93,19 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('capacity_connect_token');
   };
 
-  const updateUser = (updatedUser) => setUser(updatedUser);
+  const persistUser = (nextUser) => {
+    setUser(nextUser);
+    if (nextUser) {
+      localStorage.setItem('capacity_connect_user', JSON.stringify(nextUser));
+      return;
+    }
+
+    localStorage.removeItem('capacity_connect_user');
+  };
+
+  const updateUser = (updatedUser) => {
+    persistUser(updatedUser);
+  };
 
   const DEMO_USERS = {
     Trainee: {
@@ -135,16 +152,9 @@ export const AuthProvider = ({ children }) => {
   const switchDemoRole = async (targetRole) => {
     const validRole = ['Trainee', 'Trainer', 'Admin'].includes(targetRole) ? targetRole : 'Trainee';
 
-    // Simulate network delay for realistic UI feedback
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
     const updated = DEMO_USERS[validRole] || DEMO_USERS.Trainee;
-    setUser(updated);
-    try {
-      localStorage.setItem('capacity_connect_user', JSON.stringify(updated));
-    } catch {
-      // ignore storage failure
-    }
+    localStorage.removeItem('capacity_connect_token');
+    persistUser(updated);
   };
 
   return (
