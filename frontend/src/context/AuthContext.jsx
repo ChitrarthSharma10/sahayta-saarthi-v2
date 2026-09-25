@@ -90,19 +90,55 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (updatedUser) => setUser(updatedUser);
 
+  const DEMO_USERS = {
+    Trainee: {
+      _id: 'demo-trainee',
+      name: 'Jason Ranti',
+      email: 'jason.ranti@coursue.com',
+      role: 'Trainee',
+      status: 'Approved',
+      profile: {
+        designation: 'Product Designer',
+        department: 'Design',
+        enrolledCourses: [],
+      },
+    },
+    Trainer: {
+      _id: 'demo-trainer',
+      name: 'Priya Nair',
+      email: 'priya.nair@capacityconnect.in',
+      role: 'Trainer',
+      status: 'Approved',
+      profile: {
+        phone: '+91-9876500002',
+        designation: 'Senior Learning Specialist',
+        department: 'Human Resources',
+        bio: 'L&D professional with 8 years of experience in leadership and soft-skills training.',
+      },
+      skills: ['Leadership Development', 'Communication', 'Team Building', 'Conflict Resolution'],
+      competencies: ['Soft Skills', 'Management', 'HR Practices'],
+    },
+    Admin: {
+      _id: 'demo-admin',
+      name: 'Arjun Mehta',
+      email: 'admin@capacityconnect.in',
+      role: 'Admin',
+      status: 'Approved',
+      profile: {
+        phone: '+91-9876500001',
+        designation: 'Platform Administrator',
+        department: 'IT',
+      },
+    },
+  };
+
   const switchDemoRole = async (targetRole) => {
+    const validRole = ['Trainee', 'Trainer', 'Admin'].includes(targetRole) ? targetRole : 'Trainee';
+
     // Simulate network delay for realistic UI feedback
     await new Promise((resolve) => setTimeout(resolve, 600));
 
-    const updated = user
-      ? { ...user, role: targetRole }
-      : {
-          _id: 'demo-123',
-          name: 'Demo User',
-          email: 'demo@example.com',
-          role: targetRole,
-          status: 'Approved',
-        };
+    const updated = DEMO_USERS[validRole] || DEMO_USERS.Trainee;
     setUser(updated);
     try {
       localStorage.setItem('capacity_connect_user', JSON.stringify(updated));
