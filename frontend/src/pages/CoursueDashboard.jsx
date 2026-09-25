@@ -11,10 +11,13 @@ import { useToast } from '../components/common/Toast';
 import { api } from '../services/api';
 import { FeedbackPanel } from '../components/common/FeedbackPanel';
 import { useAuth } from '../context/AuthContext';
+import { StreaksCalendar } from '../components/trainee/StreaksCalendar';
+import { MCQProgressChart } from '../components/trainee/MCQProgressChart';
+import { TraineeSettingsView } from '../components/trainee/TraineeSettingsView';
 import {
-  X, CheckCircle2, Play, Sparkles, BookOpen, Clock, Users,
+  X, Play, BookOpen, Clock, Users,
   FolderArchive, Video, Presentation, FileText, ExternalLink,
-  Tag, ChevronRight, FileCheck, AlertCircle,
+  ChevronRight, FileCheck, AlertCircle,
 } from 'lucide-react';
 
 /* ════════════════════════════════════════════════════════════════
@@ -26,11 +29,11 @@ const CoursesView = ({ courses, assessments, searchQuery, onOpenCourse, enrolled
   const [selectedAssessment, setSelectedAssessment] = useState(null);
 
   const courseProgressMap = {
-    'Effective Leadership & Team Management':  { progress: 75,  dueDate: 'Due: May 20', nextUnit: 'Conflict Resolution' },
-    'Communication Skills for Professionals':  { progress: 90,  dueDate: 'Due: May 25', nextUnit: 'Final Presentation' },
+    'Effective Leadership & Team Management': { progress: 75, dueDate: 'Due: May 20', nextUnit: 'Conflict Resolution' },
+    'Communication Skills for Professionals': { progress: 90, dueDate: 'Due: May 25', nextUnit: 'Final Presentation' },
     'Cloud Computing Fundamentals (AWS & Azure)': { progress: 40, dueDate: 'Due: Jun 10', nextUnit: 'VPC Architecture' },
-    'Agile & Scrum Practitioner':              { progress: 20,  dueDate: 'Due: Jun 18', nextUnit: 'Sprint Ceremonies'  },
-    'HR Practices & Compliance Essentials':    { progress: 100, dueDate: 'Completed',   nextUnit: 'Cert Issued'        },
+    'Agile & Scrum Practitioner': { progress: 20, dueDate: 'Due: Jun 18', nextUnit: 'Sprint Ceremonies' },
+    'HR Practices & Compliance Essentials': { progress: 100, dueDate: 'Completed', nextUnit: 'Cert Issued' },
   };
 
   const filtered = courses.filter((c) => {
@@ -378,9 +381,8 @@ const LibraryView = ({ library, searchQuery }) => {
           <button
             key={tab.id}
             onClick={() => setLibTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
-              libTab === tab.id ? 'bg-[#755BE8] text-white shadow-sm' : 'text-[#92929E] hover:text-[#19191F]'
-            }`}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${libTab === tab.id ? 'bg-[#755BE8] text-white shadow-sm' : 'text-[#92929E] hover:text-[#19191F]'
+              }`}
           >
             {tab.label}
           </button>
@@ -395,7 +397,7 @@ const LibraryView = ({ library, searchQuery }) => {
           </div>
         ) : (
           filtered.map((item) => {
-            const isVideo  = item.type === 'video';
+            const isVideo = item.type === 'video';
             const isSlides = item.type === 'slides';
             return (
               <div
@@ -403,12 +405,11 @@ const LibraryView = ({ library, searchQuery }) => {
                 className="p-4 rounded-2xl bg-white border border-[#EEEEF4] hover:border-[#755BE8]/30 hover:bg-[#EEE9FB]/20 transition-all flex items-start justify-between gap-4 group"
               >
                 <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                    isVideo  ? 'bg-red-50 text-red-500 border-red-100' :
-                    isSlides ? 'bg-amber-50 text-amber-500 border-amber-100' :
-                               'bg-blue-50 text-blue-500 border-blue-100'
-                  }`}>
-                    {isVideo  && <Video className="w-5 h-5" />}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${isVideo ? 'bg-red-50 text-red-500 border-red-100' :
+                      isSlides ? 'bg-amber-50 text-amber-500 border-amber-100' :
+                        'bg-blue-50 text-blue-500 border-blue-100'
+                    }`}>
+                    {isVideo && <Video className="w-5 h-5" />}
                     {isSlides && <Presentation className="w-5 h-5" />}
                     {!isVideo && !isSlides && <FileText className="w-5 h-5" />}
                   </div>
@@ -450,13 +451,13 @@ const LibraryView = ({ library, searchQuery }) => {
 export const CoursueDashboard = () => {
   const { addToast } = useToast();
   const { user } = useAuth();
-  const [activeNav,   setActiveNav]   = useState('Dashboard');
+  const [activeNav, setActiveNav] = useState('Dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Data for sub-views
-  const [courses,     setCourses]     = useState([]);
+  const [courses, setCourses] = useState([]);
   const [assessments, setAssessments] = useState([]);
-  const [library,     setLibrary]     = useState([]);
+  const [library, setLibrary] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseResources, setCourseResources] = useState([]);
   const [enrolledCourseIds, setEnrolledCourseIds] = useState(new Set());
@@ -470,9 +471,9 @@ export const CoursueDashboard = () => {
           api.getLibrary(),
           api.getEnrollments(user?._id || 'demo-trainee'),
         ]);
-        if (coursesRes?.courses)         setCourses(coursesRes.courses);
+        if (coursesRes?.courses) setCourses(coursesRes.courses);
         if (assessmentsRes?.assessments) setAssessments(assessmentsRes.assessments);
-        if (libraryRes?.library)         setLibrary(libraryRes.library);
+        if (libraryRes?.library) setLibrary(libraryRes.library);
         if (enrollmentsRes?.enrollments) setEnrolledCourseIds(new Set(enrollmentsRes.enrollments.map((item) => item.courseId)));
       } catch (err) {
         console.warn('Error loading trainee data:', err);
@@ -545,19 +546,19 @@ export const CoursueDashboard = () => {
   }, [selectedCourse]);
 
   // Dashboard-specific modal state
-  const [activeModal,   setActiveModal]   = useState(null);
-  const [selectedItem,  setSelectedItem]  = useState(null);
+  const [activeModal, setActiveModal] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const handleJoinClick = () => {
     setSelectedCourse(null);
     setActiveModal(null);
     setActiveNav('All Courses');
   };
-  const handleCourseClick     = (course) => { setSelectedCourse(course); setActiveNav('Courses'); };
-  const handleLessonAction    = (l) => { setSelectedItem(l); setActiveModal('lesson'); };
-  const handleProgressAction  = (m) => addToast(`Viewing progress for ${m.title}`, 'info');
-  const handleAddMentor       = () => addToast('Browse directory to discover accredited mentors', 'info');
-  const handleSeeAllMentors   = () => addToast('Loading full mentor catalog...', 'info');
+  const handleCourseClick = (course) => { setSelectedCourse(course); setActiveNav('Courses'); };
+  const handleLessonAction = (l) => { setSelectedItem(l); setActiveModal('lesson'); };
+  const handleProgressAction = (m) => addToast(`Viewing progress for ${m.title}`, 'info');
+  const handleAddMentor = () => addToast('Browse directory to discover accredited mentors', 'info');
+  const handleSeeAllMentors = () => addToast('Loading full mentor catalog...', 'info');
 
   /* ── View switcher ─────────────────────────────────────────── */
   const renderMainContent = () => {
@@ -600,12 +601,15 @@ export const CoursueDashboard = () => {
         return <LibraryView library={library} searchQuery={searchQuery} />;
       case 'Feedback':
         return <FeedbackPanel />;
+      case 'Settings':
+        return <TraineeSettingsView />;
       case 'Dashboard':
       default:
         return (
           <>
             <HeroBanner onJoinClick={handleJoinClick} />
             <CourseProgressCard onActionClick={handleProgressAction} />
+            <MCQProgressChart />
             <ContinueWatchingCarousel
               courses={courses.filter((course) => enrolledCourseIds.has(course._id))}
               searchQuery={searchQuery}
@@ -638,11 +642,14 @@ export const CoursueDashboard = () => {
             <main className="flex-1 min-w-0 w-full space-y-2">
               {renderMainContent()}
             </main>
-            <StatisticsPanel
-              variant="trainee"
-              onAddMentor={handleAddMentor}
-              onSeeAllMentors={handleSeeAllMentors}
-            />
+            <div className="w-full lg:w-[270px] xl:w-[285px] shrink-0 space-y-6">
+              <StatisticsPanel
+                variant="trainee"
+                onAddMentor={handleAddMentor}
+                onSeeAllMentors={handleSeeAllMentors}
+              />
+              <StreaksCalendar />
+            </div>
           </div>
         ) : (
           /* Sub-views: full-width single column */

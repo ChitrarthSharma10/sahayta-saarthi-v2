@@ -3,7 +3,6 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
-  Clock,
   Award,
   ChevronRight,
   ArrowLeft,
@@ -12,6 +11,7 @@ import {
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../common/Toast';
+import { recordMCQAttempt } from '../../utils/activityTracker';
 
 export const AssessmentModal = ({ assessment, onClose, onCompleted }) => {
   const { user } = useAuth();
@@ -54,6 +54,12 @@ export const AssessmentModal = ({ assessment, onClose, onCompleted }) => {
 
       if (res.success && res.result) {
         setResult(res.result);
+        recordMCQAttempt({
+          title: assessment.title,
+          score: res.result.score,
+          totalQuestions: res.result.total || questions.length,
+          passed: res.result.passed,
+        }, user?._id || user?.id);
         window.dispatchEvent(new CustomEvent('capacity-connect-assessment-submitted', {
           detail: res.result,
         }));
