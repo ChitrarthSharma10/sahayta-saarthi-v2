@@ -111,6 +111,17 @@
   }
 }
 
+@keyframes portalPageIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes loginOrbitFloat {
   0%, 100% {
     transform: translate3d(0, 0, 0) rotate(0deg);
@@ -128,6 +139,10 @@
   animation: loginContentIn 550ms 180ms ease-out both;
 }
 
+.portal-shell {
+  animation: portalPageIn 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 .login-orbit {
   animation: loginOrbitFloat 9s ease-in-out infinite;
 }
@@ -139,6 +154,7 @@
 @media (prefers-reduced-motion: reduce) {
   .login-card,
   .login-form-content,
+  .portal-shell,
   .login-orbit {
     animation: none;
   }

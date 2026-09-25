@@ -24,12 +24,16 @@ const MainLayout = () => {
 
   // Trainee → full Capacity Connect trainee dashboard (has its own sidebar/header)
   if (role === 'Trainee') {
-    return <CoursueDashboard />;
+    return (
+      <div className="portal-shell">
+        <CoursueDashboard />
+      </div>
+    );
   }
 
   // Trainer & Admin → shared Capacity Connect layout shell
   return (
-    <div className="dark-dashboard relative min-h-screen bg-[#0B1020] text-slate-100 antialiased">
+    <div className="portal-shell dark-dashboard relative min-h-screen bg-[#0B1020] text-slate-100 antialiased">
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(115,191,196,0.26),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(255,129,10,0.18),_transparent_32%)]" />
         <div className="absolute inset-0 bg-[#0B1020]/72" />
