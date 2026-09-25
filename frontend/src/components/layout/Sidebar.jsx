@@ -28,7 +28,6 @@ const NAV_CONFIG = {
     { id: 'assessments-builder', label: 'Questionnaire Builder',   icon: CheckSquare     },
     { id: 'library-uploader',    label: 'Content Library',         icon: FolderArchive   },
     { id: 'feedback',            label: 'Feedback',                 icon: MessageSquare   },
-    { id: 'profile-management',  label: 'Profile Management',       icon: Users           },
   ],
   Admin: [
     { id: 'dashboard',         label: 'Dashboard',          icon: LayoutDashboard },
@@ -129,11 +128,24 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
       {/* ── Bottom anchored: Settings + User + Logout ─────────── */}
       <div className="px-4 pb-5 border-t border-[#EEEEF4] pt-4 space-y-1">
         <button
-          onClick={() => {}}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-[#92929E] hover:text-[#19191F] hover:bg-[#F6F7FB] transition-all"
+          onClick={() => setActiveTab('settings')}
+          className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 text-left ${
+            activeTab === 'settings' || activeTab === 'profile-management'
+              ? 'bg-[#EEE9FB] text-[#755BE8] font-bold'
+              : 'text-[#92929E] hover:text-[#19191F] hover:bg-[#F6F7FB]'
+          }`}
         >
-          <Settings className="w-[17px] h-[17px]" />
-          Settings
+          <Settings
+            className={`w-[17px] h-[17px] shrink-0 transition-colors ${
+              activeTab === 'settings' || activeTab === 'profile-management'
+                ? 'text-[#755BE8]'
+                : 'text-[#92929E] group-hover:text-[#19191F]'
+            }`}
+          />
+          <span className="leading-none truncate">Settings</span>
+          {(activeTab === 'settings' || activeTab === 'profile-management') && (
+            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#755BE8] shrink-0" />
+          )}
         </button>
 
         {/* User info row */}

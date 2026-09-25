@@ -46,8 +46,8 @@ export const TrainerProfileManagement = () => {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h2 className="text-xl font-extrabold text-[#19191F]">Profile Management</h2>
-        <p className="mt-1 text-sm text-[#92929E]">Maintain your expertise and qualification evidence for competency mapping.</p>
+        <h2 className="text-xl font-extrabold text-[#19191F]">Settings & Profile Management</h2>
+        <p className="mt-1 text-sm text-[#92929E]">Maintain your trainer profile, expertise, and qualification credentials.</p>
       </div>
       <form onSubmit={handleSave} className="space-y-6">
         <section className="rounded-3xl border border-[#EEEEF4] bg-white p-6 shadow-sm">

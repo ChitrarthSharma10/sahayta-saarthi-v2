@@ -4,6 +4,7 @@ import { MENTORS_LIST } from '../../data/coursueData';
 import { useToast } from '../common/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { PerformanceLineChart } from './PerformanceLineChart';
 
 const EMPTY_CHARTS = {
   trainee: {
@@ -86,7 +87,7 @@ export const StatisticsPanel = ({
   };
 
   return (
-    <div className={`w-full ${variant === 'trainer' ? 'xl:flex-1 xl:min-w-[360px]' : 'lg:w-[270px] xl:w-[285px] shrink-0'} space-y-6`}>
+    <div className="w-full lg:w-[270px] xl:w-[285px] shrink-0 space-y-6">
       <div className="bg-white rounded-3xl p-5 border border-[#EEEEF4] shadow-card space-y-5">
         <div className="flex items-center justify-between">
           <div>
@@ -102,51 +103,55 @@ export const StatisticsPanel = ({
           </button>
         </div>
 
-        <div className="bg-[#EEE9FB] rounded-2xl p-3.5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
-              {chart.series.map((series) => (
-                <span key={series.label} className="flex items-center gap-1 text-[9px] font-semibold text-[#92929E]">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: series.color }} />
-                  {series.label}
-                </span>
-              ))}
+        {variant === 'trainee' ? (
+          <PerformanceLineChart />
+        ) : (
+          <div className="bg-[#EEE9FB] rounded-2xl p-3.5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {chart.series.map((series) => (
+                  <span key={series.label} className="flex items-center gap-1 text-[9px] font-semibold text-[#92929E]">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: series.color }} />
+                    {series.label}
+                  </span>
+                ))}
+              </div>
+              <span className="text-[9px] font-bold text-[#92929E]">%</span>
             </div>
-            <span className="text-[9px] font-bold text-[#92929E]">%</span>
-          </div>
 
-          <div className="relative h-28">
-            <div className="absolute inset-0 flex flex-col justify-between">
-              {[100, 75, 50, 25, 0].map((value) => (
-                <div key={value} className="flex items-center gap-2">
-                  <span className="w-5 text-right text-[8px] font-semibold text-[#92929E]">{value}</span>
-                  <div className="flex-1 border-b border-dashed border-[#D8D0F7]" />
-                </div>
-              ))}
+            <div className="relative h-28">
+              <div className="absolute inset-0 flex flex-col justify-between">
+                {[100, 75, 50, 25, 0].map((value) => (
+                  <div key={value} className="flex items-center gap-2">
+                    <span className="w-5 text-right text-[8px] font-semibold text-[#92929E]">{value}</span>
+                    <div className="flex-1 border-b border-dashed border-[#D8D0F7]" />
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-y-0 left-7 right-1 flex items-end justify-around gap-1 pb-0.5">
+                {chart.labels.map((label, index) => (
+                  <div key={label} className="flex h-full flex-1 items-end justify-center gap-0.5">
+                    {chart.series.map((series) => (
+                      <div
+                        key={series.label}
+                        className="w-[clamp(6px,1.5vw,10px)] max-w-[12px] min-w-[5px] rounded-t-sm shadow-sm"
+                        style={{
+                          height: `${Math.max(4, (series.values[index] / chart.max) * 100)}%`,
+                          backgroundColor: series.color,
+                        }}
+                        title={`${series.label}: ${series.values[index]}%`}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="absolute inset-y-0 left-7 right-1 flex items-end justify-around gap-1 pb-0.5">
-              {chart.labels.map((label, index) => (
-                <div key={label} className="flex h-full flex-1 items-end justify-center gap-0.5">
-                  {chart.series.map((series) => (
-                    <div
-                      key={series.label}
-                      className="w-[clamp(0.5rem,1.8vw,1rem)] rounded-t-sm shadow-sm"
-                      style={{
-                        height: `${Math.max(4, (series.values[index] / chart.max) * 100)}%`,
-                        backgroundColor: series.color,
-                      }}
-                      title={`${series.label}: ${series.values[index]}%`}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
 
-          <div className="flex justify-around pl-7 pr-1 pt-2 text-[8px] font-semibold text-[#92929E]">
-            {chart.labels.map((label) => <span key={label}>{label}</span>)}
+            <div className="flex justify-around pl-7 pr-1 pt-2 text-[8px] font-semibold text-[#92929E]">
+              {chart.labels.map((label) => <span key={label} className="truncate max-w-[55px] text-center" title={label}>{label}</span>)}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* "Your mentor" Section */}
         <div className="space-y-3 pt-1">

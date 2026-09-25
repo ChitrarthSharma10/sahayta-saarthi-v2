@@ -19,6 +19,8 @@ import { useAuth } from '../context/AuthContext';
 import { AssessmentModal } from '../components/trainee/AssessmentModal';
 import { StatisticsPanel } from '../components/coursue/StatisticsPanel';
 import { useToast } from '../components/common/Toast';
+import { StreaksCalendar } from '../components/trainee/StreaksCalendar';
+import { MCQProgressChart } from '../components/trainee/MCQProgressChart';
 
 export const TraineeDashboard = ({ searchQuery }) => {
   const { user } = useAuth();
@@ -154,6 +156,16 @@ export const TraineeDashboard = ({ searchQuery }) => {
               <div className="text-[10px] text-emerald-400 font-semibold">+2 hrs logged today</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Visual Analytics Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        <div className="lg:col-span-7">
+          <StreaksCalendar />
+        </div>
+        <div className="lg:col-span-5">
+          <MCQProgressChart />
         </div>
       </div>
 

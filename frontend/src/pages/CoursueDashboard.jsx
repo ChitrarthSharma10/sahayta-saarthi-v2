@@ -11,6 +11,7 @@ import { useToast } from '../components/common/Toast';
 import { api } from '../services/api';
 import { FeedbackPanel } from '../components/common/FeedbackPanel';
 import { useAuth } from '../context/AuthContext';
+import { StreaksCalendar } from '../components/trainee/StreaksCalendar';
 import {
   X, CheckCircle2, Play, Sparkles, BookOpen, Clock, Users,
   FolderArchive, Video, Presentation, FileText, ExternalLink,
@@ -638,11 +639,14 @@ export const CoursueDashboard = () => {
             <main className="flex-1 min-w-0 w-full space-y-2">
               {renderMainContent()}
             </main>
-            <StatisticsPanel
-              variant="trainee"
-              onAddMentor={handleAddMentor}
-              onSeeAllMentors={handleSeeAllMentors}
-            />
+            <div className="w-full lg:w-[270px] xl:w-[285px] shrink-0 space-y-6">
+              <StatisticsPanel
+                variant="trainee"
+                onAddMentor={handleAddMentor}
+                onSeeAllMentors={handleSeeAllMentors}
+              />
+              <StreaksCalendar />
+            </div>
           </div>
         ) : (
           /* Sub-views: full-width single column */

@@ -549,12 +549,13 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
         );
       case 'feedback':
         return <FeedbackPanel />;
+      case 'settings':
       case 'profile-management':
         return <TrainerProfileManagement />;
       case 'dashboard':
       default:
         return (
-          <div className="flex flex-col xl:flex-row items-start gap-6">
+          <div className="flex flex-col lg:flex-row items-start gap-6">
             <div className="flex-1 min-w-0 w-full">
               <DashboardView
                 user={user}
