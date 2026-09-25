@@ -93,17 +93,21 @@ export const AuthProvider = ({ children }) => {
   const switchDemoRole = async (targetRole) => {
     // Simulate network delay for realistic UI feedback
     await new Promise((resolve) => setTimeout(resolve, 600));
-    
-    if (user) {
-      setUser({ ...user, role: targetRole });
-    } else {
-      setUser({
-        _id: 'demo-123',
-        name: 'Demo User',
-        email: 'demo@example.com',
-        role: targetRole,
-        status: 'Approved'
-      });
+
+    const updated = user
+      ? { ...user, role: targetRole }
+      : {
+          _id: 'demo-123',
+          name: 'Demo User',
+          email: 'demo@example.com',
+          role: targetRole,
+          status: 'Approved',
+        };
+    setUser(updated);
+    try {
+      localStorage.setItem('capacity_connect_user', JSON.stringify(updated));
+    } catch {
+      // ignore storage failure
     }
   };
 

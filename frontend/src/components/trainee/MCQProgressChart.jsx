@@ -1,35 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Area,
-  AreaChart,
 } from 'recharts';
 import { getStoredAttempts } from '../../utils/activityTracker';
+import { useAuth } from '../../context/AuthContext';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const item = payload[0]?.payload;
     return (
-      <div className="bg-[#121316]/95 backdrop-blur-md border border-slate-700 p-3 rounded-xl shadow-2xl">
-        <p className="text-slate-200 text-xs font-bold mb-1.5">{item?.fullTitle || label}</p>
-        <p className="text-yellow-400 text-sm font-black flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-yellow-400" />
-          Your Score: {payload[0]?.value}%
+      <div className="bg-[#19191F] text-white border border-[#EEEEF4]/20 p-3 rounded-xl shadow-xl">
+        <p className="text-white text-xs font-bold mb-1 truncate max-w-[200px]">
+          {item?.fullTitle || label}
         </p>
-        {payload[1] && (
-          <p className="text-slate-400 text-xs font-semibold flex items-center gap-2 mt-1">
-            <span className="w-2 h-2 rounded-full bg-slate-600" />
-            Batch Avg: {payload[1].value}%
-          </p>
-        )}
+        <p className="text-[#A78BFA] text-sm font-black flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#A78BFA]" />
+          Score: {payload[0]?.value}%
+        </p>
         {item?.date && (
-          <p className="text-[10px] text-slate-500 mt-1.5 pt-1.5 border-t border-slate-800">
+          <p className="text-[10px] text-gray-400 mt-1 pt-1 border-t border-gray-700">
             {item.date}
           </p>
         )}
@@ -39,12 +34,17 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export const MCQProgressChart = () => {
-  const [attempts, setAttempts] = useState(() => getStoredAttempts());
+export const MCQProgressChart = ({ userId: propUserId }) => {
+  const { user } = useAuth();
+  const activeUserId = propUserId || user?._id || user?.id || 'guest';
+  const [updateTrigger, setUpdateTrigger] = useState(0);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      setAttempts(getStoredAttempts());
+    const handleUpdate = (event) => {
+      const targetUserId = event?.detail?.userId;
+      if (!targetUserId || targetUserId === activeUserId) {
+        setUpdateTrigger((prev) => prev + 1);
+      }
     };
 
     window.addEventListener('capacity-connect-attempts-updated', handleUpdate);
@@ -53,43 +53,71 @@ export const MCQProgressChart = () => {
       window.removeEventListener('capacity-connect-attempts-updated', handleUpdate);
       window.removeEventListener('capacity-connect-assessment-submitted', handleUpdate);
     };
-  }, []);
+  }, [activeUserId]);
 
-  // Format data points for recharts
-  const chartData = attempts.map((att, index) => {
-    const d = new Date(att.timestamp || Date.now());
-    const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return {
-      name: `Test ${index + 1}`,
-      score: att.score,
-      avg: Math.min(85, Math.max(60, Math.round(att.score * 0.82 + 10))),
-      fullTitle: att.title || `Test ${index + 1}`,
-      date: dateLabel,
-    };
-  });
+  const attempts = useMemo(() => {
+    void updateTrigger;
+    return getStoredAttempts(activeUserId);
+  }, [activeUserId, updateTrigger]);
+
+  const chartData = useMemo(() => {
+    return attempts.map((att, index) => {
+      const d = new Date(att.timestamp || 0);
+      const dateLabel = att.timestamp
+        ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : `Test ${index + 1}`;
+      return {
+        name: `T${index + 1}`,
+        score: att.score,
+        fullTitle: att.title || `Test ${index + 1}`,
+        date: dateLabel,
+      };
+    });
+  }, [attempts]);
 
   const latestScore = attempts.length > 0 ? attempts[attempts.length - 1].score : 0;
   const avgScore = attempts.length > 0
     ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length)
     : 0;
+  const highScore = attempts.length > 0
+    ? Math.max(...attempts.map((a) => a.score))
+    : 0;
+
+  if (attempts.length === 0) {
+    return (
+      <div className="rounded-3xl bg-white border border-[#EEEEF4] p-6 shadow-card w-full flex flex-col justify-center items-center text-center min-h-[260px]">
+        <div className="w-10 h-10 rounded-2xl bg-[#EEE9FB] flex items-center justify-center text-[#755BE8] font-bold text-sm mb-3">
+          📈
+        </div>
+        <h3 className="text-sm font-bold text-[#19191F]">Assessment Performance</h3>
+        <p className="text-xs text-[#92929E] mt-1 max-w-sm">
+          No assessment attempts recorded yet. Take an assessment from Quizzes & Tests to start tracking your score progression!
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-3xl bg-[#1c1d22] border border-slate-800 p-6 shadow-xl w-full h-full min-h-[300px] flex flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div className="rounded-3xl bg-white border border-[#EEEEF4] p-6 shadow-card w-full flex flex-col min-h-[300px]">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
-          <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-            📈 Assessment Performance
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Real-time score progression ({attempts.length} tests evaluated)
+          <h3 className="text-base font-bold text-[#19191F] flex items-center gap-2">
+            <span>📈</span> Assessment Performance
+          </h3>
+          <p className="text-xs text-[#92929E] mt-0.5">
+            Score progression across {attempts.length} {attempts.length === 1 ? 'assessment' : 'assessments'}
           </p>
         </div>
-        <div className="flex items-center gap-4 text-xs font-semibold">
-          <div className="flex items-center gap-1.5 text-yellow-400">
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]" /> Latest: {latestScore}%
+        <div className="flex items-center gap-3 text-xs font-semibold">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EEE9FB] text-[#755BE8]">
+            <span className="w-2 h-2 rounded-full bg-[#755BE8]" />
+            Latest: {latestScore}%
           </div>
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-600" /> Avg: {avgScore}%
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F6F7FB] text-[#19191F] border border-[#EEEEF4]">
+            Avg: {avgScore}%
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F6F7FB] text-[#19191F] border border-[#EEEEF4]">
+            Peak: {highScore}%
           </div>
         </div>
       </div>
@@ -98,46 +126,38 @@ export const MCQProgressChart = () => {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
-              <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#facc15" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#facc15" stopOpacity={0} />
+              <linearGradient id="scoreColor" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#755BE8" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#755BE8" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" vertical={false} />
-            <XAxis 
-              dataKey="name" 
-              stroke="#718096" 
-              fontSize={10} 
-              tickLine={false} 
-              axisLine={false} 
-              dy={10} 
+            <CartesianGrid strokeDasharray="3 3" stroke="#F1F1F5" vertical={false} />
+            <XAxis
+              dataKey="name"
+              stroke="#92929E"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+              dy={10}
             />
-            <YAxis 
-              stroke="#718096" 
-              fontSize={10} 
-              tickLine={false} 
-              axisLine={false} 
+            <YAxis
+              stroke="#92929E"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
               domain={[0, 100]}
-              dx={-10} 
+              ticks={[0, 25, 50, 75, 100]}
+              dx={-10}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Area 
-              type="monotone" 
-              dataKey="score" 
-              stroke="#facc15" 
-              strokeWidth={3} 
-              fillOpacity={1} 
-              fill="url(#colorScore)" 
-              activeDot={{ r: 6, fill: '#facc15', stroke: '#1c1d22', strokeWidth: 3 }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="avg" 
-              stroke="#475569" 
-              strokeWidth={2} 
-              strokeDasharray="5 5" 
-              dot={false}
-              activeDot={false}
+            <Area
+              type="monotone"
+              dataKey="score"
+              stroke="#755BE8"
+              strokeWidth={2.5}
+              fillOpacity={1}
+              fill="url(#scoreColor)"
+              activeDot={{ r: 5, fill: '#755BE8', stroke: '#fff', strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

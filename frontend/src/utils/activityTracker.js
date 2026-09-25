@@ -1,21 +1,26 @@
-const STORAGE_KEY = 'capacity_connect_mcq_attempts_v2';
+const getStorageKey = (userId) => {
+  const safeId = (userId && typeof userId === 'string' && userId.trim()) ? userId.trim() : 'guest';
+  return `capacity_connect_mcq_attempts_${safeId}`;
+};
 
-export const getStoredAttempts = () => {
+export const getStoredAttempts = (userId) => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey(userId));
     if (!raw) {
       return [];
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
     console.warn('Failed to parse attempts from localStorage', e);
     return [];
   }
 };
 
-export const recordMCQAttempt = (attempt) => {
+export const recordMCQAttempt = (attempt, userId) => {
   try {
-    const current = getStoredAttempts();
+    const safeId = (userId && typeof userId === 'string' && userId.trim()) ? userId.trim() : 'guest';
+    const current = getStoredAttempts(safeId);
     const newEntry = {
       id: attempt.id || `att-${Date.now()}`,
       title: attempt.title || 'MCQ Assessment',
@@ -25,11 +30,15 @@ export const recordMCQAttempt = (attempt) => {
       timestamp: Date.now(),
     };
     const updated = [...current, newEntry];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('capacity-connect-attempts-updated', { detail: updated }));
+    localStorage.setItem(getStorageKey(safeId), JSON.stringify(updated));
+    window.dispatchEvent(
+      new CustomEvent('capacity-connect-attempts-updated', {
+        detail: { userId: safeId, attempts: updated },
+      })
+    );
     return updated;
   } catch (e) {
     console.warn('Failed to record attempt to localStorage', e);
-    return getStoredAttempts();
+    return getStoredAttempts(userId);
   }
 };

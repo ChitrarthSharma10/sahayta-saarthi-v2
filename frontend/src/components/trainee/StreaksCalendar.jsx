@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getStoredAttempts } from '../../utils/activityTracker';
+import { useAuth } from '../../context/AuthContext';
 
-export const StreaksCalendar = () => {
-  const [attempts, setAttempts] = useState(() => getStoredAttempts());
+export const StreaksCalendar = ({ userId: propUserId }) => {
+  const { user } = useAuth();
+  const activeUserId = propUserId || user?._id || user?.id || 'guest';
+  const [updateTrigger, setUpdateTrigger] = useState(0);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      setAttempts(getStoredAttempts());
+    const handleUpdate = (event) => {
+      const targetUserId = event?.detail?.userId;
+      if (!targetUserId || targetUserId === activeUserId) {
+        setUpdateTrigger((prev) => prev + 1);
+      }
     };
 
     window.addEventListener('capacity-connect-attempts-updated', handleUpdate);
@@ -15,9 +21,14 @@ export const StreaksCalendar = () => {
       window.removeEventListener('capacity-connect-attempts-updated', handleUpdate);
       window.removeEventListener('capacity-connect-assessment-submitted', handleUpdate);
     };
-  }, []);
+  }, [activeUserId]);
 
-  // Compute 20-week (140-day) activity map for compact sidebar widget
+  const attempts = useMemo(() => {
+    void updateTrigger;
+    return getStoredAttempts(activeUserId);
+  }, [activeUserId, updateTrigger]);
+
+  // Compute 18-week (126-day) activity map for compact widget
   const { weeks, totalQuestions, currentStreak } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -26,7 +37,7 @@ export const StreaksCalendar = () => {
     let dynamicQuestions = 0;
 
     attempts.forEach((att) => {
-      const attDate = new Date(att.timestamp || Date.now());
+      const attDate = new Date(att.timestamp || 0);
       attDate.setHours(0, 0, 0, 0);
       const diffDays = Math.max(0, Math.floor((today - attDate) / 86400000));
       attemptsByDaysAgo[diffDays] = (attemptsByDaysAgo[diffDays] || 0) + 1;

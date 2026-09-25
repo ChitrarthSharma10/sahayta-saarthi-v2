@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   AreaChart,
   Area,
@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { getStoredAttempts } from '../../utils/activityTracker';
+import { useAuth } from '../../context/AuthContext';
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -29,12 +30,17 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-export const PerformanceLineChart = () => {
-  const [attempts, setAttempts] = useState(() => getStoredAttempts());
+export const PerformanceLineChart = ({ userId: propUserId }) => {
+  const { user } = useAuth();
+  const activeUserId = propUserId || user?._id || user?.id || 'guest';
+  const [updateTrigger, setUpdateTrigger] = useState(0);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      setAttempts(getStoredAttempts());
+    const handleUpdate = (event) => {
+      const targetUserId = event?.detail?.userId;
+      if (!targetUserId || targetUserId === activeUserId) {
+        setUpdateTrigger((prev) => prev + 1);
+      }
     };
 
     window.addEventListener('capacity-connect-attempts-updated', handleUpdate);
@@ -43,7 +49,27 @@ export const PerformanceLineChart = () => {
       window.removeEventListener('capacity-connect-attempts-updated', handleUpdate);
       window.removeEventListener('capacity-connect-assessment-submitted', handleUpdate);
     };
-  }, []);
+  }, [activeUserId]);
+
+  const attempts = useMemo(() => {
+    void updateTrigger;
+    return getStoredAttempts(activeUserId);
+  }, [activeUserId, updateTrigger]);
+
+  const chartData = useMemo(() => {
+    return attempts.map((att, index) => {
+      const d = new Date(att.timestamp || 0);
+      const dateLabel = att.timestamp
+        ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : `Test ${index + 1}`;
+      return {
+        name: `T${index + 1}`,
+        score: att.score,
+        fullTitle: att.title || `Test ${index + 1}`,
+        date: dateLabel,
+      };
+    });
+  }, [attempts]);
 
   if (!attempts || attempts.length === 0) {
     return (
@@ -58,17 +84,6 @@ export const PerformanceLineChart = () => {
       </div>
     );
   }
-
-  const chartData = attempts.map((att, index) => {
-    const d = new Date(att.timestamp || Date.now());
-    const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return {
-      name: `T${index + 1}`,
-      score: att.score,
-      fullTitle: att.title || `Test ${index + 1}`,
-      date: dateLabel,
-    };
-  });
 
   const latestScore = attempts[attempts.length - 1].score;
 

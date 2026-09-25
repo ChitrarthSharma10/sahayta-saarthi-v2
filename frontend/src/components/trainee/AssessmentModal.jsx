@@ -3,7 +3,6 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
-  Clock,
   Award,
   ChevronRight,
   ArrowLeft,
@@ -60,7 +59,7 @@ export const AssessmentModal = ({ assessment, onClose, onCompleted }) => {
           score: res.result.score,
           totalQuestions: res.result.total || questions.length,
           passed: res.result.passed,
-        });
+        }, user?._id || user?.id);
         window.dispatchEvent(new CustomEvent('capacity-connect-assessment-submitted', {
           detail: res.result,
         }));
