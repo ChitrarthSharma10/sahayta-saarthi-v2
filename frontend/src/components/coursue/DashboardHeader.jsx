@@ -55,16 +55,16 @@ export const DashboardHeader = ({ searchQuery, setSearchQuery }) => {
 
   return (
     <header className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 pb-6">
-      {/* Wide White Pill Search Field */}
+      {/* Wide dark glass search field */}
       <div className="relative flex-1 max-w-xl w-full">
-        <div className="w-full bg-white rounded-full border border-[#EEEEF4] shadow-card px-4 py-2.5 flex items-center gap-3 transition-all focus-within:border-[#755BE8]/60 focus-within:ring-2 focus-within:ring-[#755BE8]/10">
-          <Search className="w-4 h-4 text-[#92929E] shrink-0" />
+        <div className="w-full bg-white/5 rounded-full border border-white/10 px-4 py-2.5 flex items-center gap-3 transition-all focus-within:border-[#73bfc4]/60 focus-within:ring-2 focus-within:ring-[#73bfc4]/10 backdrop-blur-xl">
+          <Search className="w-4 h-4 text-slate-300 shrink-0" />
           <input
             type="text"
             placeholder="Search your course...."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent border-none text-xs text-[#19191F] placeholder-[#92929E] outline-none font-medium"
+            className="w-full bg-transparent border-none text-xs text-slate-50 placeholder-slate-300 outline-none font-medium"
           />
         </div>
       </div>
@@ -75,11 +75,11 @@ export const DashboardHeader = ({ searchQuery, setSearchQuery }) => {
         <button
           type="button"
           onClick={() => addToast('No unread messages in inbox', 'info')}
-          className="w-9 h-9 rounded-full bg-white border border-[#EEEEF4] shadow-card flex items-center justify-center text-[#19191F] hover:bg-[#F9F9FC] transition-colors relative"
+          className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-100 hover:bg-white/10 transition-colors relative"
           title="Messages"
         >
-          <MessageSquare className="w-4 h-4 text-[#19191F]" />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#755BE8]" />
+          <MessageSquare className="w-4 h-4 text-slate-100" />
+          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#73bfc4]" />
         </button>
 
         {/* Circular Notification Bell Button */}
@@ -87,11 +87,11 @@ export const DashboardHeader = ({ searchQuery, setSearchQuery }) => {
           <button
             type="button"
             onClick={() => setNotificationsOpen((previous) => !previous)}
-            className="w-9 h-9 rounded-full bg-white border border-[#EEEEF4] shadow-card flex items-center justify-center text-[#19191F] hover:bg-[#F9F9FC] transition-colors relative"
+            className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-100 hover:bg-white/10 transition-colors relative"
             title="Notifications"
           >
-            <Bell className="w-4 h-4 text-[#19191F]" />
-            {announcements.length > 0 && <span className="absolute top-1.5 right-1.5 min-w-3.5 h-3.5 rounded-full bg-[#E8505B] px-0.5 text-[8px] font-bold text-white">{announcements.length}</span>}
+            <Bell className="w-4 h-4 text-slate-100" />
+            {announcements.length > 0 && <span className="absolute top-1.5 right-1.5 min-w-3.5 h-3.5 rounded-full bg-[#73bfc4] px-0.5 text-[8px] font-bold text-slate-950">{announcements.length}</span>}
           </button>
           {notificationsOpen && (
             <div className="absolute right-0 z-50 mt-2 w-80 rounded-2xl border border-[#EEEEF4] bg-white p-4 shadow-xl">
@@ -104,27 +104,27 @@ export const DashboardHeader = ({ searchQuery, setSearchQuery }) => {
         </div>
 
         {/* Subtle Divider */}
-        <div className="h-6 w-[1px] bg-[#EEEEF4] mx-1" />
+        <div className="h-6 w-[1px] bg-white/10 mx-1" />
 
         {/* User Avatar & Name with Role Switcher Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
             onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity bg-transparent p-1 rounded-full"
+            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity bg-white/5 border border-white/10 p-1.5 rounded-full"
           >
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
               alt="Jason Ranti"
-              className="w-8 h-8 rounded-full object-cover border border-[#EEEEF4] shadow-sm"
+              className="w-8 h-8 rounded-full object-cover border border-white/10 shadow-sm"
               onError={(e) => {
                 e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
               }}
             />
-            <span className="text-xs font-bold text-[#19191F] hidden sm:inline-block">
+            <span className="text-xs font-bold text-slate-50 hidden sm:inline-block">
               {user?.name || 'Jason Ranti'}
             </span>
-            <ChevronDown className="w-3.5 h-3.5 text-[#92929E]" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
           </button>
 
           {/* Role Switching Dropdown to preserve multi-role console access */}

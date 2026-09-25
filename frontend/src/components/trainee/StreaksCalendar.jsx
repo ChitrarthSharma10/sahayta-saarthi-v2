@@ -94,33 +94,33 @@ export const StreaksCalendar = ({ userId: propUserId }) => {
 
   const getColor = (intensity) => {
     switch (intensity) {
-      case 2: return 'bg-[#A7F3D0] border-[#6EE7B7]'; // Light green
-      case 3: return 'bg-[#34D399] border-[#10B981]'; // Medium emerald
-      case 4: return 'bg-[#10B981] border-[#059669] shadow-[0_0_6px_rgba(16,185,129,0.5)]'; // Vibrant green
-      default: return 'bg-white border-[#E2E8F0] hover:border-[#CBD5E1]';
+      case 2: return 'bg-[#7dd3fc]/80 border-[#67e8f9]';
+      case 3: return 'bg-[#5eead4]/90 border-[#2dd4bf]';
+      case 4: return 'bg-[#73bfc4] border-[#73bfc4] shadow-[0_0_8px_rgba(115,191,196,0.5)]';
+      default: return 'bg-slate-800/80 border-slate-600/80 hover:border-slate-400';
     }
   };
 
   return (
-    <div className="bg-white rounded-3xl p-5 border border-[#EEEEF4] shadow-card space-y-3.5 text-left">
+    <div className="bg-slate-900/60 rounded-3xl p-5 border border-white/10 shadow-[0_18px_45px_rgba(2,6,23,0.28)] space-y-3.5 text-left backdrop-blur-xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-[#19191F] flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-slate-50 flex items-center gap-1.5">
             <span>🔥</span> Activity Streaks
           </h3>
-          <p className="text-[10px] text-[#92929E] mt-0.5">
+          <p className="text-[10px] text-slate-300 mt-0.5">
             {totalQuestions} questions attempted · {attempts.length} {attempts.length === 1 ? 'quiz' : 'quizzes'}
           </p>
         </div>
-        <div className="px-2.5 py-1 rounded-full bg-[#EEE9FB] text-[#755BE8] border border-[#755BE8]/20 text-[10px] font-bold shrink-0">
+        <div className="px-2.5 py-1 rounded-full bg-[#73bfc4]/12 text-[#73bfc4] border border-[#73bfc4]/25 text-[10px] font-bold shrink-0">
           {currentStreak} {currentStreak === 1 ? 'Day' : 'Days'} Streak
         </div>
       </div>
 
       {/* Grid Container */}
-      <div className="bg-[#F8F9FD] border border-[#EEEEF4] rounded-2xl p-3">
-        <div className="flex items-center justify-between text-[9px] text-[#92929E] font-medium mb-2 px-1">
+      <div className="bg-slate-950/40 border border-white/10 rounded-2xl p-3">
+        <div className="flex items-center justify-between text-[9px] text-slate-300 font-medium mb-2 px-1">
           <span>Past 18 Weeks</span>
           <span>Today</span>
         </div>
@@ -141,14 +141,14 @@ export const StreaksCalendar = ({ userId: propUserId }) => {
       </div>
 
       {/* Footer / Legend */}
-      <div className="flex items-center justify-between text-[9px] text-[#92929E] pt-0.5">
+      <div className="flex items-center justify-between text-[9px] text-slate-300 pt-0.5">
         <span className="truncate">Turns green upon test completion</span>
         <div className="flex items-center gap-1 shrink-0 ml-2">
           <span>Less</span>
-          <div className="w-2 h-2 rounded-[2px] bg-white border border-[#E2E8F0]" />
-          <div className="w-2 h-2 rounded-[2px] bg-[#A7F3D0] border-[#6EE7B7]" />
-          <div className="w-2 h-2 rounded-[2px] bg-[#34D399] border-[#10B981]" />
-          <div className="w-2 h-2 rounded-[2px] bg-[#10B981] border-[#059669]" />
+          <div className="w-2 h-2 rounded-[2px] bg-slate-800 border border-slate-600" />
+          <div className="w-2 h-2 rounded-[2px] bg-[#7dd3fc]/80 border-[#67e8f9]" />
+          <div className="w-2 h-2 rounded-[2px] bg-[#5eead4]/90 border-[#2dd4bf]" />
+          <div className="w-2 h-2 rounded-[2px] bg-[#73bfc4] border-[#73bfc4]" />
           <span>More</span>
         </div>
       </div>

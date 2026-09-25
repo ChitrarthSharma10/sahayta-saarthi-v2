@@ -68,17 +68,17 @@ export const TopBar = ({ searchQuery, setSearchQuery }) => {
   ];
 
   return (
-    <header className="h-[68px] bg-white border-b border-[#EEEEF4] px-6 flex items-center gap-4 sticky top-0 z-20">
+    <header className="h-[68px] bg-slate-950/45 border-b border-white/10 px-6 flex items-center gap-4 sticky top-0 z-20 backdrop-blur-xl">
 
       {/* ── Wide pill search bar ─────────────────────────────── */}
       <div className="relative flex-1 max-w-[520px]">
-        <Search className="w-4 h-4 text-[#92929E] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
           placeholder="Search your course, assessment, or trainer…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-[#F6F7FB] border border-[#EEEEF4] focus:border-[#755BE8] text-[#19191F] placeholder-[#92929E] text-[13px] rounded-full pl-10 pr-4 py-2.5 outline-none transition-all duration-200 focus:ring-2 focus:ring-[#755BE8]/15"
+          className="w-full bg-white/5 border border-white/10 focus:border-[#73bfc4] text-slate-50 placeholder-slate-300 text-[13px] rounded-full pl-10 pr-4 py-2.5 outline-none transition-all duration-200 focus:ring-2 focus:ring-[#73bfc4]/15"
         />
       </div>
 
@@ -86,7 +86,7 @@ export const TopBar = ({ searchQuery, setSearchQuery }) => {
       <div className="ml-auto flex items-center gap-2">
 
         {/* Messages icon */}
-        <button className="w-9 h-9 rounded-full bg-[#F6F7FB] border border-[#EEEEF4] flex items-center justify-center text-[#92929E] hover:text-[#755BE8] hover:border-[#755BE8]/30 transition-colors">
+        <button className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-[#73bfc4] hover:border-[#73bfc4]/30 transition-colors">
           <MessageCircle className="w-4 h-4" />
         </button>
 
@@ -94,11 +94,11 @@ export const TopBar = ({ searchQuery, setSearchQuery }) => {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setNotifDropdownOpen((p) => !p)}
-            className="relative w-9 h-9 rounded-full bg-[#F6F7FB] border border-[#EEEEF4] flex items-center justify-center text-[#92929E] hover:text-[#755BE8] hover:border-[#755BE8]/30 transition-colors"
+            className="relative w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-[#73bfc4] hover:border-[#73bfc4]/30 transition-colors"
           >
             <Bell className="w-4 h-4" />
             {announcements.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#755BE8] text-white font-black text-[9px] flex items-center justify-center shadow">
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#73bfc4] text-slate-950 font-black text-[9px] flex items-center justify-center shadow">
                 {announcements.length}
               </span>
             )}
@@ -131,13 +131,13 @@ export const TopBar = ({ searchQuery, setSearchQuery }) => {
         </div>
 
         {/* Subtle vertical divider */}
-        <div className="h-7 w-px bg-[#EEEEF4] mx-1" />
+        <div className="h-7 w-px bg-white/10 mx-1" />
 
         {/* Demo Role Switcher dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setRoleDropdownOpen((p) => !p)}
-            className="flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-full bg-[#EEE9FB] border border-[#755BE8]/20 text-[#755BE8] text-xs font-bold hover:bg-[#e0d8f9] transition-colors"
+            className="flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-full bg-[#73bfc4]/12 border border-[#73bfc4]/20 text-[#73bfc4] text-xs font-bold hover:bg-[#73bfc4]/18 transition-colors"
           >
             <span className="text-[11px]">{role}</span>
             <ChevronDown

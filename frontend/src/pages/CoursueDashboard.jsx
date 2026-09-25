@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ShaderGradient, ShaderGradientCanvas } from '@shadergradient/react';
 import { AppSidebar } from '../components/coursue/AppSidebar';
 import { DashboardHeader } from '../components/coursue/DashboardHeader';
 import { HeroBanner } from '../components/coursue/HeroBanner';
@@ -628,35 +629,92 @@ export const CoursueDashboard = () => {
   const isDashboardView = activeNav === 'Dashboard';
 
   return (
-    <div className="min-h-screen bg-[#F6F7FB] text-[#19191F] flex flex-col md:flex-row antialiased">
-      {/* Left Sidebar */}
-      <AppSidebar activeNav={activeNav} onNavSelect={setActiveNav} />
+    <div className="dark-dashboard relative min-h-screen bg-[#0B1020] text-slate-100 antialiased">
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <ShaderGradientCanvas
+          className="h-full w-full opacity-50"
+          pointerEvents="none"
+          pixelDensity={1}
+          lazyLoad
+          powerPreference="low-power"
+        >
+          <ShaderGradient
+            animate="on"
+            axesHelper="off"
+            bgColor1="#000000"
+            bgColor2="#000000"
+            brightness={0.8}
+            cAzimuthAngle={270}
+            cDistance={0.5}
+            cPolarAngle={180}
+            cameraZoom={15.1}
+            color1="#73bfc4"
+            color2="#ff810a"
+            color3="#8da0ce"
+            destination="onCanvas"
+            embedMode="off"
+            envPreset="city"
+            format="gif"
+            fov={45}
+            frameRate={10}
+            gizmoHelper="hide"
+            grain="on"
+            lightType="env"
+            pixelDensity={1}
+            positionX={-0.1}
+            positionY={0}
+            positionZ={0}
+            range="disabled"
+            rangeEnd={40}
+            rangeStart={0}
+            reflection={0.4}
+            rotationX={0}
+            rotationY={130}
+            rotationZ={70}
+            shader="defaults"
+            type="sphere"
+            uAmplitude={3.2}
+            uDensity={0.8}
+            uFrequency={5.5}
+            uSpeed={0.3}
+            uStrength={0.3}
+            uTime={0}
+            wireframe={false}
+          />
+        </ShaderGradientCanvas>
+        <div className="absolute inset-0 bg-[#0B1020]/72" />
+      </div>
 
-      {/* Main content column */}
-      <div className="flex-1 flex flex-col min-w-0 px-4 sm:px-6 lg:px-8 max-w-[1500px] mx-auto w-full">
-        <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <div className="relative z-10 flex min-h-screen flex-col md:flex-row">
+        {/* Left Sidebar */}
+        <AppSidebar activeNav={activeNav} onNavSelect={setActiveNav} />
 
-        {isDashboardView ? (
-          /* Dashboard: central area + right statistics panel */
-          <div className="flex flex-col lg:flex-row items-start gap-6 pb-12">
-            <main className="flex-1 min-w-0 w-full space-y-2">
+        {/* Main content column */}
+        <div className="flex-1 flex flex-col min-w-0 px-4 sm:px-6 lg:px-8 max-w-[1500px] mx-auto w-full">
+          <DashboardHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
+          {isDashboardView ? (
+            /* Dashboard: central area + right statistics panel */
+            <div className="flex flex-col lg:flex-row items-start gap-6 pb-12">
+              <main className="flex-1 min-w-0 w-full space-y-2">
+                {renderMainContent()}
+              </main>
+              <div className="w-full lg:w-[270px] xl:w-[285px] shrink-0 space-y-6">
+                <StatisticsPanel
+                  variant="trainee"
+                  onAddMentor={handleAddMentor}
+                  onSeeAllMentors={handleSeeAllMentors}
+                />
+                <StreaksCalendar />
+              </div>
+            </div>
+          ) : (
+            /* Sub-views: full-width single column */
+            <main className="flex-1 min-w-0 w-full pb-12">
               {renderMainContent()}
             </main>
-            <div className="w-full lg:w-[270px] xl:w-[285px] shrink-0 space-y-6">
-              <StatisticsPanel
-                variant="trainee"
-                onAddMentor={handleAddMentor}
-                onSeeAllMentors={handleSeeAllMentors}
-              />
-              <StreaksCalendar />
-            </div>
-          </div>
-        ) : (
-          /* Sub-views: full-width single column */
-          <main className="flex-1 min-w-0 w-full pb-12">
-            {renderMainContent()}
-          </main>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ── Modals ──────────────────────────────────────────── */}
