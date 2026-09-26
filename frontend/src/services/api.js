@@ -340,6 +340,51 @@ const getDemoResponse = (endpoint, options = {}) => {
     return { feedback: DEMO_FEEDBACK };
   }
 
+  if (path === '/ai/chat') {
+    const payload = options.body ? JSON.parse(options.body) : {};
+    const role = payload.userRole || 'Trainee';
+    const courseId = payload.courseId;
+    const course = courseId ? DEMO_COURSES.find((item) => item._id === courseId) : DEMO_COURSES[0];
+    const libraryForCourse = DEMO_LIBRARY.filter((item) => !courseId || item.courseId === courseId);
+    const lowerMessage = String(payload.message || '').toLowerCase();
+    const resourceNames = libraryForCourse.length
+      ? libraryForCourse.slice(0, 2).map((item) => item.title).join(', ')
+      : 'course notes and slides';
+
+    let reply = `I’m helping you with ${course?.title || 'your current course'} in ${role} mode. Use the core concepts, practical examples, and the provided materials like ${resourceNames} to deepen your understanding.`;
+
+    if (role === 'Trainee') {
+      if (lowerMessage.includes('summary')) {
+        reply = `Here is a quick summary for ${course?.title || 'this course'}: ${course?.description || 'This module focuses on practical, work-ready skills and real-world application.'} Review ${resourceNames} to reinforce the main ideas and connect them to your daily work.`;
+      } else if (lowerMessage.includes('quiz') || lowerMessage.includes('practice')) {
+        reply = `Try this practice prompt: 1) define the main objective, 2) list three key takeaways, 3) explain one workplace scenario where the skill applies. This will help you test understanding of ${course?.title || 'your module'} without relying on memorisation alone.`;
+      } else if (lowerMessage.includes('concept') || lowerMessage.includes('explain')) {
+        reply = `A simple concept breakdown is to start with the purpose, then explain the main framework, then connect it to a real example. This makes the idea easier to remember and apply in ${course?.title || 'your course'}.`;
+      }
+    } else if (role === 'Trainer') {
+      if (lowerMessage.includes('quiz') || lowerMessage.includes('mcq')) {
+        reply = `For ${course?.title || 'this course'}, draft 5 concise MCQs with mixed recall and application questions. Cover the key concept, the correct framework, the practical scenario, and the likely result of a poor implementation.`;
+      } else if (lowerMessage.includes('outline') || lowerMessage.includes('lesson')) {
+        reply = `Create a lesson flow with: learning objective, 3 concept blocks, one worked example, a quick reflection task, and a short assessment. That structure works well for ${course?.title || 'your selected course'} and keeps the session practical.`;
+      }
+    } else if (lowerMessage.includes('stat') || lowerMessage.includes('summary') || lowerMessage.includes('platform')) {
+      reply = 'Platform activity looks healthy overall: engagement is steady, completion is improving, and learning journeys are distributed across key roles. Focus on approval flow, course adoption, and learner completion to identify the next optimization opportunities.';
+    }
+
+    return {
+      success: true,
+      reply,
+      role,
+      course: course ? { _id: course._id, title: course.title, category: course.category } : null,
+      suggestions: role === 'Trainer'
+        ? ['Draft 5 MCQ questions', 'Create Lesson Outline', 'Summarize reading material']
+        : role === 'Admin'
+          ? ['Show platform stats', 'List pending approvals', 'Summarize user activity']
+          : ['Summarize Chapter 1', 'Generate Quiz Practice', 'Explain key concepts'],
+      fallbackMode: true,
+    };
+  }
+
   if (path.startsWith('/competency/match/')) {
     const courseId = path.split('/')[3];
     const course = DEMO_COURSES.find((item) => item._id === courseId) || DEMO_COURSES[0];
@@ -532,6 +577,13 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(feedback),
   }),
+
+  // AI assistant
+  sendAIChat: ({ userRole, courseId, message }) =>
+    request('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ userRole, courseId, message }),
+    }),
 
   // Course enrollment
   getEnrollments: (userId) => request(`/enrollments/${userId}`),

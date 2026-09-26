@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, Lock, Mail, Plus, ShieldCheck, Trash2, User } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, Plus, ShieldCheck, Trash2, User } from 'lucide-react';
 import { ShaderGradient, ShaderGradientCanvas } from '@shadergradient/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/common/Toast';
@@ -10,6 +10,7 @@ export const LoginPage = () => {
   const { addToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
@@ -123,10 +124,10 @@ export const LoginPage = () => {
           <div className="login-orbit login-orbit-top absolute -right-24 -top-24 h-72 w-72 rounded-full border-[48px] border-[#8C78F2]/20" />
           <div className="login-orbit login-orbit-bottom absolute -bottom-32 -left-20 h-80 w-80 rounded-full border-[56px] border-[#73bfc4]/20" />
 
-          <div className="relative z-10 flex items-center gap-3">
-            <img src={logo} alt="Capacity Connect logo" className="h-12 w-12 shrink-0 drop-shadow-[0_0_20px_rgba(115,191,196,0.45)]" />
+          <div className="relative z-10 flex items-center gap-3.5">
+            <img src={logo} alt="Capacity Connect logo" className="h-14 w-14 shrink-0 rounded-xl ring-1 ring-white/10 bg-white/5 p-1.5 drop-shadow-[0_0_22px_rgba(115,191,196,0.5)]" />
             <div>
-              <p className="text-[15px] font-extrabold tracking-[-0.02em]">Capacity<span className="text-[#B8A9FF]">Connect</span></p>
+              <p className="text-[16px] font-extrabold tracking-[-0.02em]">Capacity<span className="text-[#B8A9FF]">Connect</span></p>
               <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#B7B1CE]">Enterprise LMS</p>
             </div>
           </div>
@@ -177,7 +178,15 @@ export const LoginPage = () => {
                     </div>
                     <div className="relative">
                       <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      <input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" style={{ paddingLeft: '2.75rem' }} className="h-12 w-full rounded-[12px] border border-white/10 bg-slate-950/40 pr-4 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-[#73bfc4] focus:ring-4 focus:ring-[#73bfc4]/15" required />
+                      <input id="login-password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" style={{ paddingLeft: '2.75rem', paddingRight: '2.75rem' }} className="h-12 w-full rounded-[12px] border border-white/10 bg-slate-950/40 pr-4 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-[#73bfc4] focus:ring-4 focus:ring-[#73bfc4]/15" required />
+                      <button
+                        type="button"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        onClick={() => setShowPassword((value) => !value)}
+                        className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-md p-1.5 text-slate-300 transition hover:bg-white/5 hover:text-white"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
                   </div>
 
@@ -196,7 +205,17 @@ export const LoginPage = () => {
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Work email" className="h-11 w-full rounded-[12px] border border-white/10 bg-slate-950/40 px-4 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-[#73bfc4] focus:ring-4 focus:ring-[#73bfc4]/15" required />
-                    <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" className="h-11 w-full rounded-[12px] border border-white/10 bg-slate-950/40 px-4 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-[#73bfc4] focus:ring-4 focus:ring-[#73bfc4]/15" required />
+                    <div className="relative">
+                      <input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" className="h-11 w-full rounded-[12px] border border-white/10 bg-slate-950/40 px-4 pr-10 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-[#73bfc4] focus:ring-4 focus:ring-[#73bfc4]/15" required />
+                      <button
+                        type="button"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        onClick={() => setShowPassword((value) => !value)}
+                        className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-md p-1.5 text-slate-300 transition hover:bg-white/5 hover:text-white"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                   <select value={role} onChange={(event) => setRole(event.target.value)} className="h-11 w-full rounded-[12px] border border-white/10 bg-slate-950/40 px-4 text-sm text-white outline-none transition focus:border-[#73bfc4] focus:ring-4 focus:ring-[#73bfc4]/15"><option value="Trainee">Trainee</option><option value="Trainer">Trainer</option></select>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

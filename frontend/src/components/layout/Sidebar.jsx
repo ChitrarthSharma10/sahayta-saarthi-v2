@@ -55,10 +55,10 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
     <aside className="w-[220px] shrink-0 h-screen sticky top-0 bg-[#0f172a]/60 border-r border-white/10 backdrop-blur-xl flex flex-col select-none z-30">
 
       {/* ── Brand ─────────────────────────────────────────────── */}
-      <div className="px-5 pt-6 pb-5 flex items-center gap-3">
-        <img src={logo} alt="Capacity Connect logo" className="h-9 w-9 shrink-0 drop-shadow-[0_0_16px_rgba(115,191,196,0.4)]" />
+      <div className="px-5 pt-6 pb-5 flex items-center gap-3.5">
+        <img src={logo} alt="Capacity Connect logo" className="h-11 w-11 shrink-0 rounded-lg ring-1 ring-white/10 bg-white/5 p-1 drop-shadow-[0_0_18px_rgba(115,191,196,0.55)]" />
         <div className="leading-tight">
-          <h1 className="text-[13px] font-extrabold text-slate-50 tracking-tight">
+          <h1 className="text-[14px] font-extrabold text-slate-50 tracking-tight">
             Capacity<span className="text-[#73bfc4]">Connect</span>
           </h1>
           <p className="text-[10px] text-slate-300 font-medium mt-0.5">Enterprise LMS</p>

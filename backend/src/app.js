@@ -20,6 +20,7 @@ const announcementsRouter = require('./routes/announcements');
 const analyticsRouter     = require('./routes/analytics');
 const feedbackRouter      = require('./routes/feedback');
 const enrollmentsRouter   = require('./routes/enrollments');
+const aiRouter            = require('./routes/ai');
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use('/api/announcements', announcementsRouter);
 app.use('/api/analytics',     analyticsRouter);
 app.use('/api/feedback',      feedbackRouter);
 app.use('/api/enrollments',   enrollmentsRouter);
+app.use('/api/ai',           aiRouter);
 
 /* ─────────────────────────────────────────────
    404 CATCH-ALL

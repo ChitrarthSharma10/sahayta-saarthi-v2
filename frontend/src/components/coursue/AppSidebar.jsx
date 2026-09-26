@@ -30,9 +30,9 @@ export const AppSidebar = ({ activeNav = 'Dashboard', onNavSelect }) => {
       {/* Top Section: Logo & Nav */}
       <div className="space-y-6">
         {/* Brand Logo */}
-        <div className="flex items-center gap-2.5 px-2">
-          <img src={logo} alt="Capacity Connect logo" className="h-7 w-7 shrink-0 drop-shadow-[0_0_12px_rgba(115,191,196,0.35)]" />
-          <span className="text-base font-bold tracking-tight text-slate-50">Capacity Connect</span>
+        <div className="flex items-center gap-3 px-2">
+          <img src={logo} alt="Capacity Connect logo" className="h-10 w-10 shrink-0 rounded-lg ring-1 ring-white/10 bg-white/5 p-1 drop-shadow-[0_0_16px_rgba(115,191,196,0.5)]" />
+          <span className="text-[15px] font-bold tracking-tight text-slate-50">Capacity Connect</span>
         </div>
 
         {/* Overview Navigation */}
