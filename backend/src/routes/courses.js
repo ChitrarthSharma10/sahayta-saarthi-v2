@@ -17,9 +17,10 @@ router.use(requireAuth);
    Helper: enrich a course document with live
    trainer profile info
 ───────────────────────────────────────────── */
-function enrichCourse(course) {
-  const trainer = findOne('users', (u) => u._id === course.trainerId)
-    || findOne('users', (u) => u.name === course.trainerName);
+async function enrichCourse(course) {
+  const trainer =
+    (await findOne('users', (u) => u._id === course.trainerId)) ||
+    (await findOne('users', (u) => u.name === course.trainerName));
 
   return {
     ...course,
@@ -45,12 +46,12 @@ function enrichCourse(course) {
      ?level=      (optional)
      ?trainerId=  (optional)
 ───────────────────────────────────────────── */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { category, level, trainerId, trainerName } = req.query;
   const requestedTrainerId = trainerId || (req.user.role === 'Trainer' ? req.user.userId : undefined);
   const requestedTrainerName = trainerName || (req.user.role === 'Trainer' ? req.user.name : undefined);
 
-  const courses = findAll('courses', (c) => {
+  const courses = await findAll('courses', (c) => {
     const matchCat = category ? c.category === category : true;
     const matchLevel = level ? c.level === level : true;
     const matchTrainer = requestedTrainerId || requestedTrainerName
@@ -60,7 +61,7 @@ router.get('/', (req, res) => {
     return matchCat && matchLevel && matchTrainer;
   });
 
-  const enriched = courses.map(enrichCourse);
+  const enriched = await Promise.all(courses.map(enrichCourse));
 
   return res.status(200).json({ success: true, count: enriched.length, courses: enriched });
 });
@@ -68,7 +69,7 @@ router.get('/', (req, res) => {
 /* ─────────────────────────────────────────────
    POST /api/courses
 ───────────────────────────────────────────── */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const {
     title,
     description,
@@ -94,7 +95,7 @@ router.post('/', (req, res) => {
         .filter(Boolean)
     : [];
 
-  const course = insertOne('courses', {
+  const course = await insertOne('courses', {
     title: title.trim(),
     description: description?.trim() || '',
     subject: subject.trim(),
@@ -114,27 +115,27 @@ router.post('/', (req, res) => {
   return res.status(201).json({
     success: true,
     message: 'Course created successfully.',
-    course: enrichCourse(course),
+    course: await enrichCourse(course),
   });
 });
 
 /* ─────────────────────────────────────────────
    GET /api/courses/:id
 ───────────────────────────────────────────── */
-router.get('/:id', (req, res) => {
-  const course = findById('courses', req.params.id);
+router.get('/:id', async (req, res) => {
+  const course = await findById('courses', req.params.id);
   if (!course) {
     return res.status(404).json({ success: false, message: 'Course not found.' });
   }
 
-  return res.status(200).json({ success: true, course: enrichCourse(course) });
+  return res.status(200).json({ success: true, course: await enrichCourse(course) });
 });
 
 /* ─────────────────────────────────────────────
    PATCH /api/courses/:id/trainer
 ───────────────────────────────────────────── */
-router.patch('/:id/trainer', (req, res) => {
-  const course = findById('courses', req.params.id);
+router.patch('/:id/trainer', async (req, res) => {
+  const course = await findById('courses', req.params.id);
   if (!course) {
     return res.status(404).json({ success: false, message: 'Course not found.' });
   }
@@ -147,7 +148,7 @@ router.patch('/:id/trainer', (req, res) => {
     });
   }
 
-  const updatedCourse = updateById('courses', course._id, {
+  const updatedCourse = await updateById('courses', course._id, {
     trainerId,
     trainerName,
   });
@@ -155,26 +156,26 @@ router.patch('/:id/trainer', (req, res) => {
   return res.status(200).json({
     success: true,
     message: `${trainerName} assigned as the lead trainer for this course.`,
-    course: enrichCourse(updatedCourse),
+    course: await enrichCourse(updatedCourse),
   });
 });
 
 /* ─────────────────────────────────────────────
    DELETE /api/courses/:id
 ───────────────────────────────────────────── */
-router.delete('/:id', (req, res) => {
-  const course = findById('courses', req.params.id);
+router.delete('/:id', async (req, res) => {
+  const course = await findById('courses', req.params.id);
   if (!course) {
     return res.status(404).json({ success: false, message: 'Course not found.' });
   }
 
-  const assessmentIds = findAll('assessments', (a) => a.courseId === course._id).map((a) => a._id);
-  assessmentIds.forEach((assessmentId) => deleteById('assessments', assessmentId));
+  const linkedAssessments = await findAll('assessments', (a) => a.courseId === course._id);
+  await Promise.all(linkedAssessments.map((a) => deleteById('assessments', a._id)));
 
-  const libraryIds = findAll('library', (item) => item.courseId === course._id).map((item) => item._id);
-  libraryIds.forEach((libraryId) => deleteById('library', libraryId));
+  const linkedLibraryItems = await findAll('library', (item) => item.courseId === course._id);
+  await Promise.all(linkedLibraryItems.map((item) => deleteById('library', item._id)));
 
-  deleteById('courses', course._id);
+  await deleteById('courses', course._id);
 
   return res.status(200).json({
     success: true,

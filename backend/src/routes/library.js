@@ -5,7 +5,6 @@
  */
 
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
 const { findAll, insertOne } = require('../db');
 
 const router = express.Router();
@@ -19,12 +18,12 @@ const VALID_TYPES = ['slides', 'video', 'pdf', 'doc', 'link', 'other'];
      ?courseId=                   (optional)
      ?uploadedBy=                 (optional, trainer userId)
 ───────────────────────────────────────────── */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { type, courseId, uploadedBy } = req.query;
 
-  const items = findAll('library', (item) => {
-    const matchType     = type       ? item.type       === type       : true;
-    const matchCourse   = courseId   ? item.courseId   === courseId   : true;
+  const items = await findAll('library', (item) => {
+    const matchType = type ? item.type === type : true;
+    const matchCourse = courseId ? item.courseId === courseId : true;
     const matchUploader = uploadedBy ? item.uploadedBy === uploadedBy : true;
     return matchType && matchCourse && matchUploader;
   });
@@ -52,7 +51,7 @@ router.get('/', (req, res) => {
        duration: string         (optional, for videos)
      }
 ───────────────────────────────────────────── */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const {
     title, description, type, url,
     courseId, courseTitle,
@@ -76,8 +75,7 @@ router.post('/', (req, res) => {
     });
   }
 
-  const newItem = insertOne('library', {
-    _id: uuidv4(),
+  const newItem = await insertOne('library', {
     title,
     description: description || '',
     type,

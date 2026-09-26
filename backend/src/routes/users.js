@@ -17,12 +17,12 @@ const VALID_STATUSES = ['Approved', 'Pending', 'Rejected'];
      ?status=Pending|Approved|Rejected   (optional)
      ?role=Admin|Trainer|Trainee         (optional)
 ───────────────────────────────────────────── */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { status, role } = req.query;
 
-  const users = findAll('users', (u) => {
+  const users = await findAll('users', (u) => {
     const matchStatus = status ? u.status === status : true;
-    const matchRole   = role   ? u.role   === role   : true;
+    const matchRole = role ? u.role === role : true;
     return matchStatus && matchRole;
   });
 
@@ -36,7 +36,7 @@ router.get('/', (req, res) => {
    PATCH /api/users/:id/status
    Body: { status: "Approved" | "Rejected" }
 ───────────────────────────────────────────── */
-router.patch('/:id/status', (req, res) => {
+router.patch('/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -51,12 +51,12 @@ router.patch('/:id/status', (req, res) => {
     });
   }
 
-  const user = findById('users', id);
+  const user = await findById('users', id);
   if (!user) {
     return res.status(404).json({ success: false, message: 'User not found.' });
   }
 
-  const updated = updateById('users', id, { status });
+  const updated = await updateById('users', id, { status });
   const { password: _pw, ...safeUser } = updated;
 
   return res.status(200).json({
@@ -66,8 +66,8 @@ router.patch('/:id/status', (req, res) => {
   });
 });
 
-router.patch('/:id/profile', (req, res) => {
-  const user = findById('users', req.params.id);
+router.patch('/:id/profile', async (req, res) => {
+  const user = await findById('users', req.params.id);
   if (!user) {
     return res.status(404).json({ success: false, message: 'User not found.' });
   }
@@ -97,7 +97,7 @@ router.patch('/:id/profile', (req, res) => {
       }))
     : [];
 
-  const updated = updateById('users', req.params.id, {
+  const updated = await updateById('users', req.params.id, {
     profile: {
       ...user.profile,
       designation: String(profile.designation || '').trim(),

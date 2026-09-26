@@ -5,7 +5,7 @@
  */
 
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
 const { findOne, insertOne } = require('../db');
 const { createToken } = require('../middleware/auth');
 
@@ -16,20 +16,21 @@ const router = express.Router();
    Body: { email, password }
    Returns: { user } (password field stripped)
 ───────────────────────────────────────────── */
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, message: 'Email and password are required.' });
   }
 
-  const user = findOne('users', (u) => u.email.toLowerCase() === email.toLowerCase());
+  const user = await findOne('users', (u) => u.email.toLowerCase() === email.toLowerCase());
 
   if (!user) {
     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
   }
 
-  if (user.password !== password) {
+  const passwordMatches = await bcrypt.compare(password, user.password);
+  if (!passwordMatches) {
     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
   }
 
@@ -64,7 +65,7 @@ router.post('/login', (req, res) => {
    role must be "Trainee" or "Trainer"
    New users are created with status "Pending"
 ───────────────────────────────────────────── */
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   const { name, email, password, role, profile = {}, skills = [], competencies = [], qualifications = [] } = req.body;
 
   // Validation
@@ -98,16 +99,17 @@ router.post('/register', (req, res) => {
     ? items.map((item) => String(item).trim()).filter(Boolean)
     : [];
 
-  const existing = findOne('users', (u) => u.email.toLowerCase() === email.toLowerCase());
+  const existing = await findOne('users', (u) => u.email.toLowerCase() === email.toLowerCase());
   if (existing) {
     return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
   }
 
-  const newUser = insertOne('users', {
-    _id: uuidv4(),
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newUser = await insertOne('users', {
     name,
     email,
-    password,           // Hash with bcrypt in production
+    password: hashedPassword,
     role,
     status: 'Pending',
     profile: {

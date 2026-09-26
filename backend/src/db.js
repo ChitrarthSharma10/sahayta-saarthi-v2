@@ -1,723 +1,105 @@
 /**
- * db.js — In-Memory Data Store for Capacity Connect
+ * db.js — MongoDB-backed data layer for Capacity Connect
  *
- * All collections are plain JS arrays/objects so each document has the same
- * shape you would use in a Mongoose schema.  Migrating to MongoDB later is
- * straightforward: replace the helper functions below with Mongoose model
- * calls and keep every route file unchanged.
+ * Keeps the exact same exported helpers the routes already call
+ * (findAll, findById, findOne, insertOne, updateById, deleteById), so
+ * routes barely change — they just need `await` in front of these calls
+ * now, since they talk to a real database instead of an in-memory array.
  *
- * Collections:
- *   users        – Admin, Trainer, Trainee documents
- *   courses      – Course catalogue
- *   assessments  – MCQ assessments linked to courses
- *   library      – Trainer-uploaded resources
- *   announcements – Public announcements / achievements
+ * findAll/findOne still accept a plain JS predicate function (not a Mongo
+ * query object) to match every existing call site exactly — the collection
+ * is loaded and filtered in memory. Fine at this app's scale, and it means
+ * zero query-logic rewrites in the route files.
  */
 
-const { v4: uuidv4 } = require('uuid');
+const mongoose = require('mongoose');
 
-/* ─────────────────────────────────────────────
-   COLLECTION STORES
-───────────────────────────────────────────── */
-const db = {
-  users: [],
-  courses: [],
-  assessments: [],
-  library: [],
-  announcements: [],
-  assessmentSubmissions: [],
-  feedback: [],
-  enrollments: [],
+const User = require('./models/User');
+const Course = require('./models/Course');
+const Enrollment = require('./models/Enrollment');
+const Assessment = require('./models/Assessment');
+const AssessmentSubmission = require('./models/AssessmentSubmission');
+const LibraryItem = require('./models/LibraryItem');
+const Announcement = require('./models/Announcement');
+const Feedback = require('./models/Feedback');
+
+const collections = {
+  users: User,
+  courses: Course,
+  enrollments: Enrollment,
+  assessments: Assessment,
+  assessmentSubmissions: AssessmentSubmission,
+  library: LibraryItem,
+  announcements: Announcement,
+  feedback: Feedback,
 };
 
-/* ─────────────────────────────────────────────
-   SEED DATA
-───────────────────────────────────────────── */
+function modelFor(collection) {
+  const Model = collections[collection];
+  if (!Model) throw new Error(`db.js: unknown collection "${collection}"`);
+  return Model;
+}
 
-// ── Users ──────────────────────────────────────
-const adminId      = uuidv4();
-const trainer1Id   = uuidv4();
-const trainer2Id   = uuidv4();
-const trainee1Id   = uuidv4();
-const trainee2Id   = uuidv4();
-const trainee3Id   = uuidv4();
-const trainee4Id   = uuidv4();
-const trainee5Id   = uuidv4();
-const demoTraineeId = 'user-jason';
+async function findAll(collection, predicate) {
+  const docs = await modelFor(collection).find({}).lean();
+  return predicate ? docs.filter(predicate) : docs;
+}
 
-db.users = [
-  // ── Admin
-  {
-    _id: adminId,
-    name: 'Arjun Mehta',
-    email: 'admin@capacityconnect.in',
-    password: 'admin@123',          // In production, store bcrypt hashes
-    role: 'Admin',
-    status: 'Approved',
-    profile: {
-      phone: '+91-9876500001',
-      designation: 'Platform Administrator',
-      department: 'IT',
-    },
-    createdAt: new Date('2025-01-01T08:00:00Z'),
-  },
+async function findById(collection, id) {
+  if (!id) return null;
+  return modelFor(collection).findById(id).lean();
+}
 
-  // ── Trainers
-  {
-    _id: trainer1Id,
-    name: 'Priya Nair',
-    email: 'priya.nair@capacityconnect.in',
-    password: 'trainer@123',
-    role: 'Trainer',
-    status: 'Approved',
-    profile: {
-      phone: '+91-9876500002',
-      designation: 'Senior Learning Specialist',
-      department: 'Human Resources',
-      bio: 'L&D professional with 8 years of experience in leadership and soft-skills training.',
-      experience: 8,
-    },
-    skills: ['Leadership Development', 'Communication', 'Team Building', 'Conflict Resolution'],
-    competencies: ['Soft Skills', 'Management', 'HR Practices'],
-    createdAt: new Date('2025-01-05T09:00:00Z'),
-  },
-  {
-    _id: trainer2Id,
-    name: 'Rahul Desai',
-    email: 'rahul.desai@capacityconnect.in',
-    password: 'trainer@123',
-    role: 'Trainer',
-    status: 'Approved',
-    profile: {
-      phone: '+91-9876500003',
-      designation: 'Technical Training Lead',
-      department: 'Engineering',
-      bio: 'Full-stack engineer turned trainer with expertise in cloud, DevOps and Agile methodologies.',
-      experience: 6,
-    },
-    skills: ['Cloud Computing', 'DevOps', 'Agile / Scrum', 'Python', 'System Design'],
-    competencies: ['Technology', 'Cloud', 'Agile', 'Software Engineering'],
-    createdAt: new Date('2025-01-06T09:30:00Z'),
-  },
+async function findOne(collection, predicate) {
+  const docs = await modelFor(collection).find({}).lean();
+  return docs.find(predicate) || null;
+}
 
-  // ── Trainees (2 Approved, 3 Pending)
-  {
-    _id: trainee1Id,
-    name: 'Ananya Sharma',
-    email: 'ananya.sharma@example.com',
-    password: 'trainee@123',
-    role: 'Trainee',
-    status: 'Approved',
-    profile: {
-      phone: '+91-9876500010',
-      designation: 'HR Executive',
-      department: 'Human Resources',
-      enrolledCourses: [],
-    },
-    createdAt: new Date('2025-02-01T10:00:00Z'),
-  },
-  {
-    _id: trainee2Id,
-    name: 'Karan Verma',
-    email: 'karan.verma@example.com',
-    password: 'trainee@123',
-    role: 'Trainee',
-    status: 'Approved',
-    profile: {
-      phone: '+91-9876500011',
-      designation: 'Junior Developer',
-      department: 'Engineering',
-      enrolledCourses: [],
-    },
-    createdAt: new Date('2025-02-03T11:00:00Z'),
-  },
-  {
-    _id: trainee3Id,
-    name: 'Sneha Pillai',
-    email: 'sneha.pillai@example.com',
-    password: 'trainee@123',
-    role: 'Trainee',
-    status: 'Pending',
-    profile: {
-      phone: '+91-9876500012',
-      designation: 'Business Analyst',
-      department: 'Operations',
-      enrolledCourses: [],
-    },
-    createdAt: new Date('2025-03-10T09:15:00Z'),
-  },
-  {
-    _id: trainee4Id,
-    name: 'Mohit Joshi',
-    email: 'mohit.joshi@example.com',
-    password: 'trainee@123',
-    role: 'Trainee',
-    status: 'Pending',
-    profile: {
-      phone: '+91-9876500013',
-      designation: 'Sales Executive',
-      department: 'Sales',
-      enrolledCourses: [],
-    },
-    createdAt: new Date('2025-03-12T14:30:00Z'),
-  },
-  {
-    _id: trainee5Id,
-    name: 'Divya Rao',
-    email: 'divya.rao@example.com',
-    password: 'trainee@123',
-    role: 'Trainee',
-    status: 'Pending',
-    profile: {
-      phone: '+91-9876500014',
-      designation: 'Marketing Coordinator',
-      department: 'Marketing',
-      enrolledCourses: [],
-    },
-    createdAt: new Date('2025-03-15T08:45:00Z'),
-  },
-  {
-    _id: demoTraineeId,
-    name: 'Jason Ranti',
-    email: 'jason.ranti@coursue.com',
-    password: 'trainee@123',
-    role: 'Trainee',
-    status: 'Approved',
-    profile: {
-      designation: 'Product Designer',
-      department: 'Design',
-      enrolledCourses: [],
-    },
-    createdAt: new Date('2025-03-16T09:00:00Z'),
-  },
-];
+async function insertOne(collection, data) {
+  const Model = modelFor(collection);
+  const doc = new Model(data);
+  await doc.save();
+  return doc.toObject();
+}
 
-// ── Courses ─────────────────────────────────────
-const course1Id = uuidv4();
-const course2Id = uuidv4();
-const course3Id = uuidv4();
-const course4Id = uuidv4();
-const course5Id = uuidv4();
+async function updateById(collection, id, updates) {
+  const Model = modelFor(collection);
+  return Model.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true }).lean();
+}
 
-db.courses = [
-  {
-    _id: course1Id,
-    title: 'Effective Leadership & Team Management',
-    description:
-      'A comprehensive course on building high-performing teams, resolving conflicts, and developing leadership presence in the workplace.',
-    subject: 'Management',
-    category: 'Soft Skills',
-    duration: '16 hours',
-    level: 'Intermediate',
-    trainerId: trainer1Id,
-    trainerName: 'Priya Nair',
-    requiredSkills: ['Leadership', 'Team Building', 'Conflict Resolution', 'Communication'],
-    thumbnail: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?w=400',
-    tags: ['leadership', 'management', 'team building'],
-    enrollmentCount: 34,
-    maxEnrollment: 50,
-    status: 'Active',
-    createdAt: new Date('2025-02-10T10:00:00Z'),
-  },
-  {
-    _id: course2Id,
-    title: 'Communication Skills for Professionals',
-    description:
-      'Master verbal, non-verbal, and written communication techniques to succeed in a corporate environment.',
-    subject: 'Soft Skills',
-    category: 'Soft Skills',
-    duration: '10 hours',
-    level: 'Beginner',
-    trainerId: trainer1Id,
-    trainerName: 'Priya Nair',
-    requiredSkills: ['Communication', 'Presentation', 'Coaching'],
-    thumbnail: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400',
-    tags: ['communication', 'presentation', 'writing'],
-    enrollmentCount: 48,
-    maxEnrollment: 60,
-    status: 'Active',
-    createdAt: new Date('2025-02-15T10:00:00Z'),
-  },
-  {
-    _id: course3Id,
-    title: 'Cloud Computing Fundamentals (AWS & Azure)',
-    description:
-      'Hands-on introduction to cloud infrastructure, IaaS, PaaS, SaaS models, and deployment on AWS and Azure.',
-    subject: 'Cloud',
-    category: 'Technology',
-    duration: '24 hours',
-    level: 'Beginner',
-    trainerId: trainer2Id,
-    trainerName: 'Rahul Desai',
-    requiredSkills: ['Cloud Computing', 'AWS', 'Azure', 'DevOps'],
-    thumbnail: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400',
-    tags: ['cloud', 'aws', 'azure', 'infrastructure'],
-    enrollmentCount: 62,
-    maxEnrollment: 80,
-    status: 'Active',
-    createdAt: new Date('2025-03-01T10:00:00Z'),
-  },
-  {
-    _id: course4Id,
-    title: 'Agile & Scrum Practitioner',
-    description:
-      'Understand Agile values, Scrum ceremonies, sprint planning, and how to deliver value iteratively in modern software teams.',
-    subject: 'Agile',
-    category: 'Technology',
-    duration: '12 hours',
-    level: 'Intermediate',
-    trainerId: trainer2Id,
-    trainerName: 'Rahul Desai',
-    requiredSkills: ['Agile', 'Scrum', 'Project Management', 'Product Ownership'],
-    thumbnail: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400',
-    tags: ['agile', 'scrum', 'project management'],
-    enrollmentCount: 27,
-    maxEnrollment: 40,
-    status: 'Active',
-    createdAt: new Date('2025-03-10T10:00:00Z'),
-  },
-  {
-    _id: course5Id,
-    title: 'HR Practices & Compliance Essentials',
-    description:
-      'Covers HR policies, statutory compliance, employee lifecycle management, and best practices for people managers.',
-    subject: 'HR Practices',
-    category: 'Human Resources',
-    duration: '8 hours',
-    level: 'Beginner',
-    trainerId: trainer1Id,
-    trainerName: 'Priya Nair',
-    requiredSkills: ['HR Practices', 'Compliance', 'Leadership', 'Coaching'],
-    thumbnail: 'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=400',
-    tags: ['hr', 'compliance', 'people management'],
-    enrollmentCount: 19,
-    maxEnrollment: 35,
-    status: 'Active',
-    createdAt: new Date('2025-03-20T10:00:00Z'),
-  },
-];
-
-// ── Course Enrollments ──────────────────────────
-// Enrollment is kept separate from course documents so admin course changes
-// do not invalidate trainee course relationships.
-db.enrollments = [
-  {
-    _id: uuidv4(),
-    userId: demoTraineeId,
-    courseId: course1Id,
-    status: 'Active',
-    enrolledAt: new Date('2025-03-18T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    userId: demoTraineeId,
-    courseId: course3Id,
-    status: 'Active',
-    enrolledAt: new Date('2025-03-19T10:00:00Z'),
-  },
-];
-
-// ── Assessments ──────────────────────────────────
-db.assessments = [
-  {
-    _id: uuidv4(),
-    courseId: course3Id,
-    courseTitle: 'Cloud Computing Fundamentals (AWS & Azure)',
-    title: 'Cloud Fundamentals – Chapter Quiz',
-    passingScore: 60,
-    questions: [
-      {
-        id: 'q1',
-        text: 'Which of the following is an example of Infrastructure as a Service (IaaS)?',
-        options: [
-          'Google Drive',
-          'Amazon EC2',
-          'Salesforce CRM',
-          'Microsoft Office 365',
-        ],
-        correctAnswer: 'Amazon EC2',
-      },
-      {
-        id: 'q2',
-        text: 'What does "elasticity" mean in cloud computing?',
-        options: [
-          'The ability to stretch physical servers',
-          'Automatically scaling resources up or down based on demand',
-          'A type of virtual machine',
-          'A cloud storage format',
-        ],
-        correctAnswer: 'Automatically scaling resources up or down based on demand',
-      },
-      {
-        id: 'q3',
-        text: 'Which AWS service is used for object storage?',
-        options: ['EC2', 'RDS', 'S3', 'Lambda'],
-        correctAnswer: 'S3',
-      },
-      {
-        id: 'q4',
-        text: 'In the shared responsibility model, who is responsible for securing the cloud infrastructure?',
-        options: [
-          'The customer',
-          'The cloud provider',
-          'Both equally',
-          'A third-party auditor',
-        ],
-        correctAnswer: 'The cloud provider',
-      },
-      {
-        id: 'q5',
-        text: 'Which Azure service is equivalent to AWS EC2?',
-        options: [
-          'Azure Blob Storage',
-          'Azure Virtual Machines',
-          'Azure Functions',
-          'Azure SQL Database',
-        ],
-        correctAnswer: 'Azure Virtual Machines',
-      },
-    ],
-    createdAt: new Date('2025-03-05T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    courseId: course4Id,
-    courseTitle: 'Agile & Scrum Practitioner',
-    title: 'Agile Fundamentals Quiz',
-    passingScore: 60,
-    questions: [
-      {
-        id: 'q1',
-        text: 'What is the primary goal of a Sprint Review?',
-        options: [
-          'To plan the next sprint backlog',
-          'To inspect the increment and gather stakeholder feedback',
-          'To retrospect on team processes',
-          'To update project documentation',
-        ],
-        correctAnswer: 'To inspect the increment and gather stakeholder feedback',
-      },
-      {
-        id: 'q2',
-        text: 'Which of the following is NOT one of the four Agile Manifesto values?',
-        options: [
-          'Individuals and interactions over processes and tools',
-          'Comprehensive documentation over working software',
-          'Customer collaboration over contract negotiation',
-          'Responding to change over following a plan',
-        ],
-        correctAnswer: 'Comprehensive documentation over working software',
-      },
-      {
-        id: 'q3',
-        text: 'How long is a typical Scrum Sprint?',
-        options: ['1 week', '2 to 4 weeks', '2 months', 'The entire project duration'],
-        correctAnswer: '2 to 4 weeks',
-      },
-      {
-        id: 'q4',
-        text: 'Who is responsible for managing the Product Backlog?',
-        options: ['Scrum Master', 'Development Team', 'Product Owner', 'Stakeholders'],
-        correctAnswer: 'Product Owner',
-      },
-      {
-        id: 'q5',
-        text: 'What is "velocity" in Scrum?',
-        options: [
-          'How fast developers can type code',
-          'The number of story points completed per sprint on average',
-          'A metric for server response time',
-          'The speed of the daily standup',
-        ],
-        correctAnswer: 'The number of story points completed per sprint on average',
-      },
-    ],
-    createdAt: new Date('2025-03-12T10:00:00Z'),
-  },
-];
-
-// ── Trainer Library ──────────────────────────────
-db.library = [
-  {
-    _id: uuidv4(),
-    title: 'Leadership Essentials – Slide Deck',
-    description:
-      'Comprehensive presentation slides covering leadership styles, team dynamics, and motivational frameworks.',
-    type: 'slides',
-    url: 'https://docs.google.com/presentation/d/example-leadership-slides',
-    courseId: course1Id,
-    courseTitle: 'Effective Leadership & Team Management',
-    uploadedBy: trainer1Id,
-    uploaderName: 'Priya Nair',
-    tags: ['leadership', 'slides', 'presentation'],
-    fileSize: '4.2 MB',
-    createdAt: new Date('2025-02-12T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'Leadership Essentials – Lecture',
-    description: 'YouTube lecture on leadership styles, team dynamics, and building trust.',
-    type: 'video',
-    url: 'https://www.youtube.com/watch?v=5GZ2WkQ8n4A',
-    courseId: course1Id,
-    courseTitle: 'Effective Leadership & Team Management',
-    uploadedBy: trainer1Id,
-    uploaderName: 'Priya Nair',
-    tags: ['leadership', 'lecture', 'youtube'],
-    duration: '24m',
-    createdAt: new Date('2025-02-13T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'Leadership Workshop Notes',
-    description: 'PDF notes covering leadership frameworks and team management practices.',
-    type: 'pdf',
-    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
-    courseId: course1Id,
-    courseTitle: 'Effective Leadership & Team Management',
-    uploadedBy: trainer1Id,
-    uploaderName: 'Priya Nair',
-    tags: ['leadership', 'notes', 'pdf'],
-    fileSize: '1.2 MB',
-    createdAt: new Date('2025-02-14T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'Professional Communication – Lecture',
-    description: 'YouTube lecture on clear communication, listening, and workplace presentations.',
-    type: 'video',
-    url: 'https://www.youtube.com/watch?v=HAnw168huqA',
-    courseId: course2Id,
-    courseTitle: 'Communication Skills for Professionals',
-    uploadedBy: trainer1Id,
-    uploaderName: 'Priya Nair',
-    tags: ['communication', 'lecture', 'youtube'],
-    duration: '31m',
-    createdAt: new Date('2025-02-16T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'Communication Skills Notes',
-    description: 'PDF notes with practical communication checklists and presentation guidance.',
-    type: 'pdf',
-    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
-    courseId: course2Id,
-    courseTitle: 'Communication Skills for Professionals',
-    uploadedBy: trainer1Id,
-    uploaderName: 'Priya Nair',
-    tags: ['communication', 'notes', 'pdf'],
-    fileSize: '980 KB',
-    createdAt: new Date('2025-02-17T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'Cloud Computing Bootcamp – Session Recording',
-    description:
-      'Full recorded session of the live cloud computing bootcamp covering AWS core services and hands-on demos.',
-    type: 'video',
-    url: 'https://www.youtube.com/watch?v=M988_fsOSWo',
-    courseId: course3Id,
-    courseTitle: 'Cloud Computing Fundamentals (AWS & Azure)',
-    uploadedBy: trainer2Id,
-    uploaderName: 'Rahul Desai',
-    tags: ['cloud', 'video', 'aws', 'recorded session'],
-    duration: '1h 45m',
-    createdAt: new Date('2025-03-03T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'Cloud Fundamentals Notes',
-    description: 'PDF notes on IaaS, PaaS, SaaS, AWS core services, and Azure equivalents.',
-    type: 'pdf',
-    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
-    courseId: course3Id,
-    courseTitle: 'Cloud Computing Fundamentals (AWS & Azure)',
-    uploadedBy: trainer2Id,
-    uploaderName: 'Rahul Desai',
-    tags: ['cloud', 'aws', 'azure', 'notes', 'pdf'],
-    fileSize: '2.4 MB',
-    createdAt: new Date('2025-03-04T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'Agile and Scrum – Lecture',
-    description: 'YouTube lecture covering Scrum roles, ceremonies, and sprint planning.',
-    type: 'video',
-    url: 'https://www.youtube.com/watch?v=502ILHjX9EE',
-    courseId: course4Id,
-    courseTitle: 'Agile & Scrum Practitioner',
-    uploadedBy: trainer2Id,
-    uploaderName: 'Rahul Desai',
-    tags: ['agile', 'scrum', 'lecture', 'youtube'],
-    duration: '28m',
-    createdAt: new Date('2025-03-11T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'Agile Practitioner Notes',
-    description: 'PDF notes for sprint planning, reviews, retrospectives, and team velocity.',
-    type: 'pdf',
-    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
-    courseId: course4Id,
-    courseTitle: 'Agile & Scrum Practitioner',
-    uploadedBy: trainer2Id,
-    uploaderName: 'Rahul Desai',
-    tags: ['agile', 'scrum', 'notes', 'pdf'],
-    fileSize: '1.5 MB',
-    createdAt: new Date('2025-03-12T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'HR Compliance Quick Reference Guide',
-    description:
-      'A concise PDF guide summarising key statutory HR compliance requirements, deadlines, and checklists for Indian organisations.',
-    type: 'pdf',
-    url: 'https://storage.example.com/library/hr-compliance-guide.pdf',
-    courseId: course5Id,
-    courseTitle: 'HR Practices & Compliance Essentials',
-    uploadedBy: trainer1Id,
-    uploaderName: 'Priya Nair',
-    tags: ['hr', 'compliance', 'pdf', 'reference'],
-    fileSize: '1.8 MB',
-    createdAt: new Date('2025-03-22T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'HR Practices – Lecture',
-    description: 'YouTube lecture on employee lifecycle, HR policies, and compliance essentials.',
-    type: 'video',
-    url: 'https://www.youtube.com/watch?v=6fQHLK1cIBY',
-    courseId: course5Id,
-    courseTitle: 'HR Practices & Compliance Essentials',
-    uploadedBy: trainer1Id,
-    uploaderName: 'Priya Nair',
-    tags: ['hr', 'compliance', 'lecture', 'youtube'],
-    duration: '26m',
-    createdAt: new Date('2025-03-23T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: 'HR Compliance Notes',
-    description: 'PDF notes with compliance checklists and employee lifecycle reference material.',
-    type: 'pdf',
-    url: 'https://res.cloudinary.com/demo/raw/upload/sample.pdf',
-    courseId: course5Id,
-    courseTitle: 'HR Practices & Compliance Essentials',
-    uploadedBy: trainer1Id,
-    uploaderName: 'Priya Nair',
-    tags: ['hr', 'compliance', 'notes', 'pdf'],
-    fileSize: '1.8 MB',
-    createdAt: new Date('2025-03-24T10:00:00Z'),
-  },
-];
-
-// ── Announcements ────────────────────────────────
-db.announcements = [
-  {
-    _id: uuidv4(),
-    title: '🎉 Platform Launch – Welcome to Capacity Connect!',
-    content:
-      'We are thrilled to announce the official launch of Capacity Connect, our new internal learning management platform. Explore courses, assessments, and resources designed to accelerate your professional growth.',
-    type: 'announcement',
-    postedBy: adminId,
-    postedByName: 'Arjun Mehta',
-    isPublic: true,
-    createdAt: new Date('2025-01-15T09:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: '🏆 Achievement: 100 Learners Enrolled This Month!',
-    content:
-      'Capacity Connect has crossed a major milestone — over 100 employees have enrolled in learning programmes in our first month! A big thank you to our trainers and all active learners.',
-    type: 'achievement',
-    postedBy: adminId,
-    postedByName: 'Arjun Mehta',
-    isPublic: true,
-    createdAt: new Date('2025-02-28T10:00:00Z'),
-  },
-  {
-    _id: uuidv4(),
-    title: '📢 New Courses Available – March Batch',
-    content:
-      'Three new courses have been added for the March batch: Agile & Scrum Practitioner, HR Practices & Compliance Essentials, and Cloud Computing Fundamentals. Enrol now — seats are limited!',
-    type: 'announcement',
-    postedBy: trainer1Id,
-    postedByName: 'Priya Nair',
-    isPublic: true,
-    createdAt: new Date('2025-03-01T08:00:00Z'),
-  },
-];
+async function deleteById(collection, id) {
+  const Model = modelFor(collection);
+  const result = await Model.findByIdAndDelete(id);
+  return !!result;
+}
 
 /* ─────────────────────────────────────────────
-   GENERIC CRUD HELPERS
-   These mirror the Mongoose API surface so routes
-   can be migrated with minimal changes.
+   CONNECTION + FIRST-RUN SEEDING
 ───────────────────────────────────────────── */
+async function seedIfEmpty() {
+  const userCount = await User.countDocuments();
+  if (userCount > 0) return;
 
-/**
- * Find all documents in a collection, with optional filter predicate.
- * @param {string} collection – key in db object
- * @param {function} [predicate] – optional filter fn
- */
-function findAll(collection, predicate) {
-  const docs = db[collection];
-  return predicate ? docs.filter(predicate) : [...docs];
+  const { seed } = require('./seed/seedData');
+  await seed({ User, Course, Enrollment, Assessment, LibraryItem, Announcement });
+  console.log('[db] First run detected — seeded demo data.');
 }
 
-/**
- * Find a single document by its _id field.
- */
-function findById(collection, id) {
-  return db[collection].find((doc) => doc._id === id) || null;
-}
-
-/**
- * Find a single document matching an arbitrary predicate.
- */
-function findOne(collection, predicate) {
-  return db[collection].find(predicate) || null;
-}
-
-/**
- * Insert a new document.  Adds a UUID _id and createdAt if not present.
- */
-function insertOne(collection, data) {
-  const doc = {
-    _id: data._id || uuidv4(),
-    ...data,
-    createdAt: data.createdAt || new Date(),
-  };
-  db[collection].push(doc);
-  return doc;
-}
-
-/**
- * Update fields of a document identified by _id.
- * Returns the updated document, or null if not found.
- */
-function updateById(collection, id, updates) {
-  const idx = db[collection].findIndex((doc) => doc._id === id);
-  if (idx === -1) return null;
-  db[collection][idx] = { ...db[collection][idx], ...updates, updatedAt: new Date() };
-  return db[collection][idx];
-}
-
-/**
- * Delete a document by _id. Returns true if deleted, false otherwise.
- */
-function deleteById(collection, id) {
-  const idx = db[collection].findIndex((doc) => doc._id === id);
-  if (idx === -1) return false;
-  db[collection].splice(idx, 1);
-  return true;
+async function connectDB() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('MONGODB_URI is not set. Add it to backend/.env — see .env.example.');
+  }
+  await mongoose.connect(uri);
+  await seedIfEmpty();
 }
 
 module.exports = {
-  db,
   findAll,
   findById,
   findOne,
   insertOne,
   updateById,
   deleteById,
+  connectDB,
 };

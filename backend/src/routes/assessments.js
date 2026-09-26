@@ -9,7 +9,6 @@
  */
 
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
 const { findAll, findById, insertOne } = require('../db');
 
 const router = express.Router();
@@ -19,9 +18,9 @@ const router = express.Router();
    Returns all assessments.
    Correct answers are NOT included in the response.
 ───────────────────────────────────────────── */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { courseId } = req.query;
-  const assessments = findAll('assessments', (a) => (courseId ? a.courseId === courseId : true));
+  const assessments = await findAll('assessments', (a) => (courseId ? a.courseId === courseId : true));
 
   const safeAssessments = assessments.map((a) => ({
     ...a,
@@ -36,7 +35,7 @@ router.get('/', (req, res) => {
    Create a new assessment/questionnaire (Trainer action)
    Body: { courseId, courseTitle, title, passingScore, questions, deadline }
 ───────────────────────────────────────────── */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { courseId, courseTitle, title, passingScore = 60, questions = [], deadline } = req.body;
 
   if (!courseId || !title || !questions.length) {
@@ -46,8 +45,7 @@ router.post('/', (req, res) => {
     });
   }
 
-  const newAssessment = insertOne('assessments', {
-    _id: uuidv4(),
+  const newAssessment = await insertOne('assessments', {
     courseId,
     courseTitle: courseTitle || '',
     title,
@@ -59,7 +57,6 @@ router.post('/', (req, res) => {
       options: q.options || [],
       correctAnswer: q.correctAnswer,
     })),
-    createdAt: new Date(),
   });
 
   return res.status(201).json({
@@ -74,10 +71,10 @@ router.post('/', (req, res) => {
    Returns assessment(s) for the given course.
    Correct answers are NOT included in the response.
 ───────────────────────────────────────────── */
-router.get('/course/:courseId', (req, res) => {
+router.get('/course/:courseId', async (req, res) => {
   const { courseId } = req.params;
 
-  const assessments = findAll('assessments', (a) => a.courseId === courseId);
+  const assessments = await findAll('assessments', (a) => a.courseId === courseId);
 
   if (!assessments.length) {
     return res.status(404).json({ success: false, message: 'No assessments found for this course.' });
@@ -102,7 +99,7 @@ router.get('/course/:courseId', (req, res) => {
      }
    Returns: { score, passed, total, correct, feedback[] }
 ───────────────────────────────────────────── */
-router.post('/submit', (req, res) => {
+router.post('/submit', async (req, res) => {
   const { assessmentId, userId, answers } = req.body;
 
   if (!assessmentId || !userId || !answers) {
@@ -112,7 +109,7 @@ router.post('/submit', (req, res) => {
     });
   }
 
-  const assessment = findById('assessments', assessmentId);
+  const assessment = await findById('assessments', assessmentId);
   if (!assessment) {
     return res.status(404).json({ success: false, message: 'Assessment not found.' });
   }
@@ -136,7 +133,7 @@ router.post('/submit', (req, res) => {
   const scorePercent = Math.round((correctCount / total) * 100);
   const passed = scorePercent >= assessment.passingScore;
 
-  insertOne('assessmentSubmissions', {
+  await insertOne('assessmentSubmissions', {
     assessmentId,
     assessmentTitle: assessment.title,
     courseId: assessment.courseId,
@@ -144,7 +141,6 @@ router.post('/submit', (req, res) => {
     score: scorePercent,
     passed,
     learningHours: 1,
-    submittedAt: new Date(),
   });
 
   return res.status(200).json({

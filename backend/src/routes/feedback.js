@@ -1,15 +1,14 @@
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
 const { findAll, insertOne } = require('../db');
 
 const router = express.Router();
 
-router.get('/', (_req, res) => {
-  const feedback = findAll('feedback').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+router.get('/', async (_req, res) => {
+  const feedback = (await findAll('feedback')).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   return res.json({ success: true, count: feedback.length, feedback });
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { userId, userName, userRole, rating, category = 'general', message } = req.body;
 
   if (!userId || !userName || !['Trainee', 'Trainer'].includes(userRole) || !message?.trim()) {
@@ -19,8 +18,7 @@ router.post('/', (req, res) => {
     });
   }
 
-  const item = insertOne('feedback', {
-    _id: uuidv4(),
+  const item = await insertOne('feedback', {
     userId,
     userName,
     userRole,

@@ -20,11 +20,11 @@ const getWeekIndex = (date) => {
   return Math.max(0, Math.min(3, 3 - Math.floor(Math.max(0, ageInDays) / 7)));
 };
 
-router.get('/trainee/:userId', (req, res) => {
+router.get('/trainee/:userId', async (req, res) => {
   if (req.user.role !== 'Admin' && req.params.userId !== req.user.userId) {
     return res.status(403).json({ success: false, message: 'You can only view your own analytics.' });
   }
-  const submissions = findAll(
+  const submissions = await findAll(
     'assessmentSubmissions',
     (submission) => submission.userId === req.params.userId
   );
@@ -58,13 +58,13 @@ router.get('/trainee/:userId', (req, res) => {
   });
 });
 
-router.get('/trainer/:trainerId', (req, res) => {
+router.get('/trainer/:trainerId', async (req, res) => {
   if (req.user.role !== 'Admin' && req.params.trainerId !== req.user.userId) {
     return res.status(403).json({ success: false, message: 'You can only view your own analytics.' });
   }
-  const courses = findAll('courses', (course) => course.trainerId === req.params.trainerId);
+  const courses = await findAll('courses', (course) => course.trainerId === req.params.trainerId);
   const courseIds = new Set(courses.map((course) => course._id));
-  const submissions = findAll('assessmentSubmissions', (submission) => courseIds.has(submission.courseId));
+  const submissions = await findAll('assessmentSubmissions', (submission) => courseIds.has(submission.courseId));
   const courseMetrics = courses.map((course) => {
     const courseSubmissions = submissions.filter((submission) => submission.courseId === course._id);
     return {

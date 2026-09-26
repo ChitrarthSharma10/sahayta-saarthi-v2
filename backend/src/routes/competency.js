@@ -14,10 +14,10 @@ const router = express.Router();
 /* ─────────────────────────────────────────────
    GET /api/competency/match/:courseId
 ───────────────────────────────────────────── */
-router.get('/match/:courseId', (req, res) => {
+router.get('/match/:courseId', async (req, res) => {
   const { courseId } = req.params;
 
-  const course = findById('courses', courseId);
+  const course = await findById('courses', courseId);
   if (!course) {
     return res.status(404).json({ success: false, message: 'Course not found.' });
   }
@@ -33,7 +33,7 @@ router.get('/match/:courseId', (req, res) => {
 
   const searchTerms = Array.from(new Set([...requiredSkillTerms, ...fallbackTerms]));
 
-  const trainers = findAll('users', (u) => u.role === 'Trainer' && u.status === 'Approved');
+  const trainers = await findAll('users', (u) => u.role === 'Trainer' && u.status === 'Approved');
 
   const matched = trainers
     .map((trainer) => {

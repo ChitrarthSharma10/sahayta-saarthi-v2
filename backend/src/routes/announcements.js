@@ -4,15 +4,14 @@
  */
 
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
 const { findAll, insertOne, deleteById } = require('../db');
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { type } = req.query;   // optional: ?type=announcement|achievement
 
-  const items = findAll('announcements', (a) => {
+  const items = await findAll('announcements', (a) => {
     const matchType = type ? a.type === type : true;
     return a.isPublic && matchType;
   });
@@ -23,7 +22,7 @@ router.get('/', (req, res) => {
   return res.status(200).json({ success: true, count: items.length, announcements: items });
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { title, content, type = 'announcement', postedBy, postedByName } = req.body;
 
   if (!title?.trim() || !content?.trim()) {
@@ -34,8 +33,7 @@ router.post('/', (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid announcement type.' });
   }
 
-  const announcement = insertOne('announcements', {
-    _id: uuidv4(),
+  const announcement = await insertOne('announcements', {
     title: title.trim(),
     content: content.trim(),
     type,
@@ -47,8 +45,8 @@ router.post('/', (req, res) => {
   return res.status(201).json({ success: true, message: 'Announcement published.', announcement });
 });
 
-router.delete('/:id', (req, res) => {
-  const deleted = deleteById('announcements', req.params.id);
+router.delete('/:id', async (req, res) => {
+  const deleted = await deleteById('announcements', req.params.id);
   if (!deleted) {
     return res.status(404).json({ success: false, message: 'Announcement not found.' });
   }

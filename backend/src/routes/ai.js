@@ -72,7 +72,7 @@ const buildResponse = ({ userRole, course, message, libraryItems }) => {
   return `As an admin, I can help with platform health, user approval flows, course coverage, and learning program performance. For a deeper answer, ask about user activity, learner progress, or course adoption.`;
 };
 
-router.post('/chat', (req, res) => {
+router.post('/chat', async (req, res) => {
   const { userRole = 'Trainee', courseId, message } = req.body || {};
   const prompt = (message || '').trim();
 
@@ -83,10 +83,10 @@ router.post('/chat', (req, res) => {
     });
   }
 
-  const course = courseId ? findById('courses', courseId) : findOne('courses', () => true) || null;
+  const course = courseId ? await findById('courses', courseId) : (await findOne('courses', () => true)) || null;
   const libraryItems = courseId
-    ? findAll('library', (resource) => resource.courseId === courseId)
-    : findAll('library');
+    ? await findAll('library', (resource) => resource.courseId === courseId)
+    : await findAll('library');
 
   if (!hasExternalAiKey()) {
     const reply = buildResponse({ userRole, course, message, libraryItems });
