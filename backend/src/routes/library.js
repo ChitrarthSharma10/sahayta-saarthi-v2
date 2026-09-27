@@ -1,11 +1,12 @@
 /**
  * routes/library.js
- * GET  /api/library  – List trainer library resources (filter by type/courseId)
- * POST /api/library  – Add a new resource (Trainer action)
+ * GET    /api/library      – List trainer library resources (filter by type/courseId)
+ * POST   /api/library      – Add a new resource (Trainer action)
+ * DELETE /api/library/:id  – Remove a resource (Trainer action)
  */
 
 const express = require('express');
-const { findAll, insertOne } = require('../db');
+const { findAll, insertOne, deleteById } = require('../db');
 
 const router = express.Router();
 
@@ -90,6 +91,19 @@ router.post('/', async (req, res) => {
   });
 
   return res.status(201).json({ success: true, message: 'Resource added to library.', item: newItem });
+});
+
+/* ─────────────────────────────────────────────
+   DELETE /api/library/:id
+   Remove a resource from the library (Trainer action)
+───────────────────────────────────────────── */
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  const deleted = await deleteById('library', id);
+  if (!deleted) {
+    return res.status(404).json({ success: false, message: 'Library item not found.' });
+  }
+  return res.status(200).json({ success: true, message: 'Resource removed from library.' });
 });
 
 module.exports = router;

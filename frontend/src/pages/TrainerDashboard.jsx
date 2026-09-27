@@ -18,6 +18,7 @@ import {
   BarChart3,
   Target,
   ArrowLeft,
+  Trash2,
 } from 'lucide-react';
 import { ShaderGradient, ShaderGradientCanvas } from '@shadergradient/react';
 import { api } from '../services/api';
@@ -180,7 +181,7 @@ const CourseManagementView = ({ courses, searchQuery, onOpenCourse }) => {
   );
 };
 
-const TrainerCourseView = ({ course, resources, assessments, onBack, onUpload, onQuestionnaire }) => {
+const TrainerCourseView = ({ course, resources, assessments, onBack, onUpload, onQuestionnaire, onDeleteResource, onDeleteAssessment }) => {
   const courseAssessments = assessments.filter((assessment) => assessment.courseId === course._id);
 
   return (
@@ -252,9 +253,19 @@ const TrainerCourseView = ({ course, resources, assessments, onBack, onUpload, o
                 <p className="truncate text-xs font-bold text-[#19191F]">{resource.title}</p>
                 <p className="mt-0.5 text-[10px] uppercase font-semibold text-[#92929E]">{resource.type} · {resource.uploaderName || 'Trainer'}</p>
               </div>
-              <a href={resource.url} target="_blank" rel="noreferrer" className="rounded-lg bg-[#F6F7FB] px-3 py-1.5 text-[10px] font-bold text-[#755BE8] hover:bg-[#EEE9FB]">
-                Open
-              </a>
+              <div className="flex items-center gap-2 shrink-0">
+                <a href={resource.url} target="_blank" rel="noreferrer" className="rounded-lg bg-[#F6F7FB] px-3 py-1.5 text-[10px] font-bold text-[#755BE8] hover:bg-[#EEE9FB]">
+                  Open
+                </a>
+                <button
+                  type="button"
+                  onClick={() => onDeleteResource && onDeleteResource(resource._id)}
+                  className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-colors"
+                  title="Delete resource"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -271,7 +282,17 @@ const TrainerCourseView = ({ course, resources, assessments, onBack, onUpload, o
                 <p className="text-xs font-bold text-[#19191F]">{assessment.title}</p>
                 <p className="mt-0.5 text-[10px] text-[#92929E]">{assessment.questions?.length || 0} questions · Passing {assessment.passingScore}%</p>
               </div>
-              <span className="text-[10px] font-bold text-emerald-600">Published</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-emerald-600">Published</span>
+                <button
+                  type="button"
+                  onClick={() => onDeleteAssessment && onDeleteAssessment(assessment._id)}
+                  className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-colors"
+                  title="Delete questionnaire"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -281,7 +302,7 @@ const TrainerCourseView = ({ course, resources, assessments, onBack, onUpload, o
 };
 
 /* ── 3. Questionnaire Builder tab ────────────────────────────── */
-const QuestionnaireView = ({ assessments, courses, onOpen, onCreated }) => (
+const QuestionnaireView = ({ assessments, courses, onOpen, onDelete }) => (
   <div className="space-y-5">
     <div className="flex items-center justify-between">
       <div>
@@ -320,11 +341,21 @@ const QuestionnaireView = ({ assessments, courses, onOpen, onCreated }) => (
                 <h3 className="text-sm font-bold text-[#19191F]">{a.title}</h3>
                 <p className="text-[11px] text-[#92929E] mt-0.5">{a.courseTitle || 'General Assessment'}</p>
               </div>
-              <div className="text-right shrink-0">
-                <div className="text-[11px] font-semibold text-[#19191F]">{a.questions?.length || 5} Questions</div>
-                <div className="text-[10px] text-[#92929E] mt-0.5">
-                  {a.deadline ? `Due: ${a.deadline}` : 'Self-Paced'}
+              <div className="flex items-start gap-3 shrink-0">
+                <div className="text-right">
+                  <div className="text-[11px] font-semibold text-[#19191F]">{a.questions?.length || 5} Questions</div>
+                  <div className="text-[10px] text-[#92929E] mt-0.5">
+                    {a.deadline ? `Due: ${a.deadline}` : 'Self-Paced'}
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => onDelete && onDelete(a._id)}
+                  className="flex items-center justify-center w-8 h-8 rounded-xl bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-colors mt-0.5"
+                  title="Delete questionnaire"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
             <div className="mt-3 pt-3 border-t border-[#EEEEF4] flex items-center gap-2">
@@ -341,7 +372,7 @@ const QuestionnaireView = ({ assessments, courses, onOpen, onCreated }) => (
 );
 
 /* ── 4. Content Library tab ───────────────────────────────────── */
-const ContentLibraryView = ({ library, courses, searchQuery, onOpen }) => {
+const ContentLibraryView = ({ library, courses, searchQuery, onOpen, onDelete }) => {
   const [libraryTab, setLibraryTab] = useState('all');
 
   const filtered = library.filter((item) => {
@@ -431,14 +462,24 @@ const ContentLibraryView = ({ library, courses, searchQuery, onOpen }) => {
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <span className="text-[10px] text-[#92929E]">{item.duration || item.fileSize || 'Standard'}</span>
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#F6F7FB] hover:bg-[#EEE9FB] text-[#755BE8] text-xs font-semibold border border-[#EEEEF4] hover:border-[#755BE8]/30 transition-colors"
-                  >
-                    Open <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#F6F7FB] hover:bg-[#EEE9FB] text-[#755BE8] text-xs font-semibold border border-[#EEEEF4] hover:border-[#755BE8]/30 transition-colors"
+                    >
+                      Open <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => onDelete && onDelete(item._id)}
+                      className="flex items-center justify-center w-8 h-8 rounded-xl bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-colors border border-red-100"
+                      title="Delete resource"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -509,9 +550,30 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
   const handleAssessmentCreated = (newAssessment) =>
     setAssessments((prev) => [newAssessment, ...prev]);
 
+  const handleAssessmentDeleted = async (assessmentId) => {
+    try {
+      await api.deleteAssessment(assessmentId);
+      setAssessments((prev) => prev.filter((a) => a._id !== assessmentId));
+      addToast('Questionnaire deleted.', 'success');
+    } catch (err) {
+      addToast('Failed to delete questionnaire.', 'error');
+    }
+  };
+
   const handleResourceUploaded = (newItem) => {
     setLibrary((prev) => [newItem, ...prev]);
     setSelectedCourseResources((prev) => [newItem, ...prev]);
+  };
+
+  const handleLibraryDeleted = async (resourceId) => {
+    try {
+      await api.deleteLibraryResource(resourceId);
+      setLibrary((prev) => prev.filter((r) => r._id !== resourceId));
+      setSelectedCourseResources((prev) => prev.filter((r) => r._id !== resourceId));
+      addToast('Resource deleted.', 'success');
+    } catch (err) {
+      addToast('Failed to delete resource.', 'error');
+    }
   };
 
   /* ── View switcher ─────────────────────────────────────────── */
@@ -526,6 +588,8 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
             onBack={() => setSelectedCourse(null)}
             onUpload={() => setIsUploaderOpen(true)}
             onQuestionnaire={() => setIsQuestionnaireOpen(true)}
+            onDeleteResource={handleLibraryDeleted}
+            onDeleteAssessment={handleAssessmentDeleted}
           />
         ) : (
           <CourseManagementView
@@ -541,6 +605,7 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
             courses={courses}
             onOpen={() => setIsQuestionnaireOpen(true)}
             onCreated={handleAssessmentCreated}
+            onDelete={handleAssessmentDeleted}
           />
         );
       case 'library-uploader':
@@ -550,6 +615,7 @@ export const TrainerDashboard = ({ activeTab = 'dashboard', searchQuery = '' }) 
             courses={courses}
             searchQuery={searchQuery}
             onOpen={() => setIsUploaderOpen(true)}
+            onDelete={handleLibraryDeleted}
           />
         );
       case 'feedback':

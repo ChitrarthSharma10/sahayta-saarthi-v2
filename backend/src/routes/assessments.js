@@ -1,7 +1,10 @@
 /**
  * routes/assessments.js
- * GET  /api/assessments/course/:courseId  – Fetch assessment(s) for a course
- * POST /api/assessments/submit            – Submit answers, get score back
+ * GET    /api/assessments                  – List all assessments
+ * GET    /api/assessments/course/:courseId – Fetch assessment(s) for a course
+ * POST   /api/assessments                  – Create a new assessment
+ * POST   /api/assessments/submit           – Submit answers, get score back
+ * DELETE /api/assessments/:id              – Delete an assessment (Trainer action)
  *
  * NOTE: correct answers are stripped from GET responses so clients cannot
  * cheat by reading the API response.  They are only used server-side when
@@ -9,7 +12,7 @@
  */
 
 const express = require('express');
-const { findAll, findById, insertOne } = require('../db');
+const { findAll, findById, insertOne, deleteById } = require('../db');
 
 const router = express.Router();
 
@@ -158,6 +161,19 @@ router.post('/submit', async (req, res) => {
       feedback,
     },
   });
+});
+
+/* ─────────────────────────────────────────────
+   DELETE /api/assessments/:id
+   Remove a questionnaire (Trainer action)
+───────────────────────────────────────────── */
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  const deleted = await deleteById('assessments', id);
+  if (!deleted) {
+    return res.status(404).json({ success: false, message: 'Assessment not found.' });
+  }
+  return res.status(200).json({ success: true, message: 'Assessment deleted successfully.' });
 });
 
 module.exports = router;

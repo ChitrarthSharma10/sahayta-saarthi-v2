@@ -537,6 +537,9 @@ export const api = {
       body: JSON.stringify({ assessmentId, userId, answers }),
     }),
 
+  deleteAssessment: (assessmentId) =>
+    request(`/assessments/${assessmentId}`, { method: 'DELETE' }),
+
   // Library Resources
   getLibrary: (params = {}) => {
     const query = new URLSearchParams(params).toString();
@@ -548,6 +551,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(resourceData),
     }),
+
+  deleteLibraryResource: (resourceId) =>
+    request(`/library/${resourceId}`, { method: 'DELETE' }),
 
   // Competency Mapping
   getCompetencyMatches: (courseId) => request(`/competency/match/${courseId}`),
