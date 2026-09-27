@@ -49,7 +49,6 @@ backend/
 │   │   ├── LibraryItem.js
 │   │   └── User.js
 │   ├── routes/              # Express API routers
-│   │   ├── ai.js            # Contextual AI assistant
 │   │   ├── analytics.js     # User performance & platform analytics
 │   │   ├── announcements.js # Broadcasts
 │   │   ├── assessments.js   # Quizzes and submissions

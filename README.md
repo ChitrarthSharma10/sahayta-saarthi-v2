@@ -104,7 +104,6 @@ Capacity Connect is an enterprise-grade, role-based Learning Management System (
 - **Feedback Submission:** Trainee rating submission form (star rating + feedback category + comments).
 
 ### 5. Platform-Wide Features
-- **Contextual AI Learning Assistant:** Built-in assistant endpoint (`/api/ai/chat`) tailored to the user's role (lesson summaries, practice questions, and outline generators).
 - **Global Announcements Header:** Persistent top bar bell icon with an unread badge and dropdown menu of system announcements.
 - **Global Toast Notification System:** Non-intrusive feedback toasts for all user actions (creations, deletions, status changes, enrollments).
 - **Responsive Dark Mode UI:** Dark glassmorphic panels, glowing borders, and high-performance WebGL backdrops.
@@ -132,7 +131,6 @@ sahayta-saarthi-v2/
 │   │   │   ├── LibraryItem.js           # Learning resources (slides, videos, PDFs)
 │   │   │   └── User.js                  # User profiles, roles, approval statuses, & credentials
 │   │   ├── routes/                      # REST API endpoints
-│   │   │   ├── ai.js                    # Contextual AI assistant endpoint
 │   │   │   ├── analytics.js             # Trainee & trainer aggregated statistics
 │   │   │   ├── announcements.js         # Announcement publication & deletion
 │   │   │   ├── assessments.js           # Quiz creation, retrieval & submission
@@ -292,7 +290,6 @@ The database automatically seeds with demonstration accounts across all three us
 | `/api/announcements` | `GET`, `POST` | Authenticated | Lists or publishes system-wide announcements |
 | `/api/announcements/:id` | `DELETE` | Admin | Removes an announcement notice |
 | `/api/feedback` | `GET`, `POST` | Authenticated | Submits feedback reviews or views feedback inbox |
-| `/api/ai/chat` | `POST` | Authenticated | Context-aware AI assistant responses |
 | `/api/health` | `GET` | Public | Server health and uptime verification |
 
 ---
