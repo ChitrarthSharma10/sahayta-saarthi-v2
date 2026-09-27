@@ -1,6 +1,6 @@
 # Capacity Connect – Backend API
 
-Express.js REST API server for the Capacity Connect LMS platform.
+Express.js REST API server for the Capacity Connect LMS platform, powered by MongoDB Atlas with Mongoose ODM and automated keep-alive connection management.
 
 ## Getting Started
 
@@ -16,22 +16,52 @@ Server listens on **http://localhost:5000**.
 
 ---
 
+## Environment Variables
+
+Create a `backend/.env` file with:
+```env
+PORT=5000
+NODE_ENV=development
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/capacity_connect?retryWrites=true&w=majority
+```
+
+> **Automated Heartbeat:** The backend includes a 5-minute automated MongoDB keep-alive ping (`mongoose.connection.db.admin().ping()`) in `src/server.js` to keep Atlas clusters active.
+
+---
+
 ## Project Structure
 
 ```
 backend/
 ├── src/
 │   ├── app.js               # Express app factory (middleware + routes)
-│   ├── server.js            # Entry point – binds port, graceful shutdown
-│   ├── db.js                # In-memory data store + CRUD helpers + seed data
-│   └── routes/
-│       ├── auth.js          # POST /api/auth/login, /register
-│       ├── users.js         # GET /api/users, PATCH /api/users/:id/status
-│       ├── courses.js       # GET /api/courses, /api/courses/:id
-│       ├── assessments.js   # GET /api/assessments/course/:id, POST /submit
-│       ├── library.js       # GET/POST /api/library
-│       ├── competency.js    # GET /api/competency/match/:courseId
-│       └── announcements.js # GET /api/announcements
+│   ├── server.js            # Entry point – binds port, handles MongoDB connection & 5-min ping
+│   ├── db.js                # MongoDB data access layer & Mongoose model helpers
+│   ├── middleware/
+│   │   └── auth.js          # Authentication & token verification middleware
+│   ├── models/              # Mongoose schemas
+│   │   ├── Announcement.js
+│   │   ├── Assessment.js
+│   │   ├── AssessmentSubmission.js
+│   │   ├── Course.js
+│   │   ├── Enrollment.js
+│   │   ├── Feedback.js
+│   │   ├── LibraryItem.js
+│   │   └── User.js
+│   ├── routes/              # Express API routers
+│   │   ├── ai.js            # Contextual AI assistant
+│   │   ├── analytics.js     # User performance & platform analytics
+│   │   ├── announcements.js # Broadcasts
+│   │   ├── assessments.js   # Quizzes and submissions
+│   │   ├── auth.js          # Login and registration with bcryptjs
+│   │   ├── competency.js    # Trainer-course skill matching
+│   │   ├── courses.js       # Course management
+│   │   ├── enrollments.js   # Course enrollment & opt-out
+│   │   ├── feedback.js      # User ratings & feedback inbox
+│   │   ├── library.js       # Resource uploads & catalog
+│   │   └── users.js         # User directory & approval status patch
+│   └── seed/
+│       └── seedData.js      # First-run auto-seeding
 └── package.json
 ```
 
@@ -39,15 +69,15 @@ backend/
 
 ## Seeded Data
 
-| Type     | Count | Details |
-|----------|-------|---------|
-| Admin    | 1     | `admin@capacityconnect.in` / `admin@123` |
-| Trainer  | 2     | `priya.nair@…` / `rahul.desai@…` — both Approved |
-| Trainee  | 5     | 2 Approved, 3 Pending |
-| Courses  | 5     | Across Soft Skills, Cloud, Agile, HR |
-| Assessments | 2  | Cloud Fundamentals, Agile Practitioner (5 Qs each) |
-| Library  | 3     | Slides (Google Slides), Video (YouTube), PDF |
-| Announcements | 3 | Launch, Achievement, New Courses |
+| Type | Count | Details |
+|:---|:---|:---|
+| **Admin** | 1 | `admin@capacityconnect.in` / `admin@123` |
+| **Trainer** | 2 | `priya.nair@…` / `rahul.desai@…` — both Approved |
+| **Trainee** | 5 | 2 Approved, 3 Pending |
+| **Courses** | 5 | Across Soft Skills, Cloud, Agile, HR, Management |
+| **Assessments** | 2 | Cloud Fundamentals, Agile Practitioner (5 Qs each) |
+| **Library** | 3 | Slides (Google Slides), Video (YouTube), PDF |
+| **Announcements** | 3 | Platform Launch, Milestone, New Courses |
 
 ---
 
@@ -56,128 +86,84 @@ backend/
 ### Auth
 
 | Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/auth/login` | Login (Admin / Trainer / Trainee) |
+|:---|:---|:---|
+| `POST` | `/api/auth/login` | Authenticate user & return profile session |
 | `POST` | `/api/auth/register` | Register new Trainee or Trainer (status → Pending) |
-
-#### Login Request
-```json
-{ "email": "admin@capacityconnect.in", "password": "admin@123" }
-```
-
-#### Register Request
-```json
-{
-  "name": "Test User",
-  "email": "test@example.com",
-  "password": "pass@123",
-  "role": "Trainee",
-  "profile": { "phone": "+91-9999999999", "designation": "Analyst", "department": "Ops" }
-}
-```
 
 ---
 
 ### Users (Admin)
 
 | Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/users` | List all users. Optional: `?status=Pending&role=Trainer` |
-| `PATCH` | `/api/users/:id/status` | Approve or reject a user |
-
-#### Approve User
-```json
-{ "status": "Approved" }
-```
+|:---|:---|:---|
+| `GET` | `/api/users` | List all users with optional `?status=Pending&role=Trainer` |
+| `PATCH` | `/api/users/:id/status` | Approve or reject user registration (`Approved` / `Rejected`) |
 
 ---
 
 ### Courses
 
 | Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/courses` | All courses (with trainer details). Optional: `?category=Technology&level=Beginner` |
-| `GET` | `/api/courses/:id` | Single course with full trainer profile |
+|:---|:---|:---|
+| `GET` | `/api/courses` | List courses with trainer details |
+| `POST` | `/api/courses` | Create a new course (Admin) |
+| `DELETE` | `/api/courses/:id` | Delete course from catalog (Admin) |
+
+---
+
+### Enrollments
+
+| Method | Path | Description |
+|:---|:---|:---|
+| `GET` | `/api/enrollments/:userId` | Get user's enrolled course IDs |
+| `POST` | `/api/enrollments` | Enroll user in a course |
+| `DELETE` | `/api/enrollments/:userId/:courseId` | Drop/opt-out of a course |
 
 ---
 
 ### Assessments
 
 | Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/assessments/course/:courseId` | Fetch quiz for a course (correct answers hidden) |
-| `POST` | `/api/assessments/submit` | Submit answers, get score + per-question feedback |
-
-#### Submit Answers
-```json
-{
-  "assessmentId": "<uuid>",
-  "userId": "<uuid>",
-  "answers": {
-    "q1": "Amazon EC2",
-    "q2": "Automatically scaling resources up or down based on demand",
-    "q3": "S3",
-    "q4": "The cloud provider",
-    "q5": "Azure Virtual Machines"
-  }
-}
-```
+|:---|:---|:---|
+| `GET` | `/api/assessments` | Get all assessments |
+| `GET` | `/api/assessments/course/:courseId` | Fetch assessment for a course |
+| `POST` | `/api/assessments` | Create assessment with MCQ questions |
+| `POST` | `/api/assessments/submit` | Submit answers, calculate score & per-question feedback |
 
 ---
 
-### Library (Trainer Resources)
+### Library (Resources)
 
 | Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/library` | All resources. Optional: `?type=video&courseId=<uuid>` |
-| `POST` | `/api/library` | Add a new resource |
-
-#### Add Resource
-```json
-{
-  "title": "New Slides",
-  "description": "Week 2 deck",
-  "type": "slides",
-  "url": "https://docs.google.com/presentation/...",
-  "courseId": "<uuid>",
-  "courseTitle": "Course Name",
-  "uploadedBy": "<trainer-uuid>",
-  "uploaderName": "Trainer Name",
-  "tags": ["slides", "week2"]
-}
-```
+|:---|:---|:---|
+| `GET` | `/api/library` | All resources with optional `?type=video&courseId=<id>` |
+| `POST` | `/api/library` | Add new learning resource (slides, video, PDF) |
+| `DELETE` | `/api/library/:id` | Remove a resource |
 
 ---
 
-### Competency Matching
+### Competency Mapping
 
 | Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/competency/match/:courseId` | Returns approved trainers matching the course's subject/category, sorted by match score |
+|:---|:---|:---|
+| `GET` | `/api/competency/match/:courseId` | Calculate matching trainers based on skill overlap |
 
 ---
 
-### Announcements
+### Announcements & Feedback
 
 | Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/announcements` | Public announcements. Optional: `?type=achievement` |
+|:---|:---|:---|
+| `GET` | `/api/announcements` | Retrieve active announcements |
+| `POST` | `/api/announcements` | Publish a new announcement |
+| `DELETE` | `/api/announcements/:id` | Remove an announcement |
+| `GET` | `/api/feedback` | Retrieve submitted feedback entries |
+| `POST` | `/api/feedback` | Submit feedback review with star rating |
 
 ---
 
 ### Health Check
 
 | Method | Path | Description |
-|--------|------|-------------|
+|:---|:---|:---|
 | `GET` | `/api/health` | Server liveness check |
-
----
-
-## Migrating to MongoDB
-
-The `db.js` helpers (`findAll`, `findById`, `findOne`, `insertOne`, `updateById`, `deleteById`) mirror the Mongoose API. To migrate:
-
-1. Install `mongoose`.
-2. Replace each helper in `db.js` with the equivalent Mongoose model call.
-3. Move the seed data into a `mongoose/seeds.js` file.
-4. All route files remain unchanged.

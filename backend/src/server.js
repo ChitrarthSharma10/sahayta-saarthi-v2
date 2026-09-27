@@ -33,6 +33,19 @@ connectDB()
       console.log('╚══════════════════════════════════════════════╝');
       console.log('');
     });
+
+    // Keep-alive heartbeat: ping database every 5 minutes to keep Atlas connection active
+    const PING_INTERVAL_MS = 5 * 60 * 1000;
+    setInterval(async () => {
+      try {
+        if (mongoose.connection.readyState === 1) {
+          await mongoose.connection.db.admin().ping();
+          console.log(`[db] Heartbeat ping sent at ${new Date().toISOString()}`);
+        }
+      } catch (err) {
+        console.warn('[db] Heartbeat ping failed:', err.message);
+      }
+    }, PING_INTERVAL_MS);
   })
   .catch((err) => {
     console.error('[db] Failed to connect to MongoDB:', err.message);

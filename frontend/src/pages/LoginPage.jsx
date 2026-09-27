@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, Plus, ShieldCheck, Trash2, User } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Lock, Mail, Plus, ShieldCheck, Trash2, User } from 'lucide-react';
 import { ShaderGradient, ShaderGradientCanvas } from '@shadergradient/react';
+import { SignInCard2 } from '../components/ui/sign-in-card-2';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/common/Toast';
 import logo from '../assets/logo.png';
+import studyIllustration from '../assets/study_illustration.png';
 
 export const LoginPage = () => {
   const { login, register, loading, error: authError } = useAuth();
@@ -119,10 +121,16 @@ export const LoginPage = () => {
         <div className="absolute inset-0 bg-[#0B1020]/72" />
       </div>
 
-      <div style={{ minHeight: 'calc(100vh - 3rem)' }} className="login-card relative z-10 mx-auto flex w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-[0_30px_80px_rgba(15,23,42,0.45)] backdrop-blur-2xl lg:flex-row">
-        <section className="login-panel relative flex min-h-[300px] flex-1 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#130f24] via-[#1a1530] to-[#231a3c] p-8 text-white sm:p-12 lg:min-h-[680px] lg:p-14">
-          <div className="login-orbit login-orbit-top absolute -right-24 -top-24 h-72 w-72 rounded-full border-[48px] border-[#8C78F2]/20" />
-          <div className="login-orbit login-orbit-bottom absolute -bottom-32 -left-20 h-80 w-80 rounded-full border-[56px] border-[#73bfc4]/20" />
+      <SignInCard2 className="max-w-6xl mx-auto">
+        <div style={{ minHeight: 'calc(100vh - 3rem)' }} className="login-card relative z-10 mx-auto flex w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-[0_30px_80px_rgba(15,23,42,0.45)] backdrop-blur-2xl lg:flex-row">
+        <section className="login-panel relative flex min-h-[300px] flex-1 flex-col justify-between overflow-hidden p-8 text-white sm:p-12 lg:min-h-[680px] lg:p-14">
+          {/* User Provided Study Illustration Background */}
+          <div
+            className="absolute inset-0 bg-cover bg-center pointer-events-none"
+            style={{ backgroundImage: `url(${studyIllustration})` }}
+          />
+          {/* Subtle Dark Gradient Overlay to make top logo & title text pop clearly */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A]/85 via-[#0F172A]/50 to-[#0F172A]/90 pointer-events-none" />
 
           <div className="relative z-10 flex items-center gap-3.5">
             <img src={logo} alt="Capacity Connect logo" className="h-14 w-14 shrink-0 rounded-xl ring-1 ring-white/10 bg-white/5 p-1.5 drop-shadow-[0_0_22px_rgba(115,191,196,0.5)]" />
@@ -132,15 +140,10 @@ export const LoginPage = () => {
             </div>
           </div>
 
-          <div className="relative z-10 max-w-md py-10 lg:py-0">
+          <div className="relative z-10 my-auto flex flex-col justify-center py-10 lg:py-0">
             <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-[#B8A9FF]">Your learning workspace</p>
-            <h1 className="max-w-sm text-4xl font-extrabold leading-[1.08] tracking-[-0.045em] sm:text-5xl">Build capability. Make an impact.</h1>
-            <p className="mt-5 max-w-sm text-sm leading-6 text-[#C5C1D4]">One place to discover courses, grow skills, and keep every learning journey moving forward.</p>
-          </div>
-
-          <div className="relative z-10 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-[#D4D0E1]">
-            <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#73bfc4]" /> Structured learning</span>
-            <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#73bfc4]" /> Role-based access</span>
+            <h1 className="max-w-md text-4xl font-extrabold leading-[1.08] tracking-[-0.045em] sm:text-5xl">Build capability. Make an impact.</h1>
+            <p className="mt-5 max-w-md text-sm leading-6 text-[#C5C1D4]">One place to discover courses, grow skills, and keep every learning journey moving forward.</p>
           </div>
         </section>
 
@@ -240,6 +243,7 @@ export const LoginPage = () => {
           </div>
         </section>
       </div>
+      </SignInCard2>
     </main>
   );
 };
